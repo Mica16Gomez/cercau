@@ -1,11 +1,14 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 
-import AppTabs from '@/components/app-tabs';
+import { ProveedorAutenticacion } from '@/contextos/autenticacion';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTheme } from '@/hooks/use-theme';
 
-export default function TabLayout() {
+// Los enlaces directos a un formulario también tienen los tabs como pantalla de regreso.
+export const unstable_settings = { anchor: '(tabs)' };
+
+export default function RootLayout() {
   const colorScheme = useColorScheme();
   const theme = useTheme();
   const navigationTheme = colorScheme === 'dark' ? DarkTheme : DefaultTheme;
@@ -22,8 +25,15 @@ export default function TabLayout() {
         border: theme.border,
       },
     }}>
-      <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-      <AppTabs />
+      <ProveedorAutenticacion>
+        <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.background } }}>
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="iniciar-sesion" />
+          <Stack.Screen name="seleccionar-rol" />
+          <Stack.Screen name="registrarse" />
+        </Stack>
+      </ProveedorAutenticacion>
     </ThemeProvider>
   );
 }

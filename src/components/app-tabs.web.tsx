@@ -12,8 +12,8 @@ export default function AppTabs() {
   return (
     <Tabs style={[styles.container, { backgroundColor: theme.background }]}>
       <TabSlot style={styles.content} />
-      <SafeAreaView edges={['bottom']} style={{ backgroundColor: theme.backgroundElement }}>
-        <TabList style={[styles.tabList, { borderColor: theme.border }]}>
+      <TabList asChild>
+        <SafeAreaView edges={['bottom']} style={StyleSheet.flatten([styles.tabList, { borderColor: theme.border, backgroundColor: theme.backgroundElement }])}>
           <TabTrigger name="index" href="/" asChild>
             <TabButton icon={{ web: 'search' }}>Buscar</TabButton>
           </TabTrigger>
@@ -26,8 +26,8 @@ export default function AppTabs() {
           <TabTrigger name="mi-cuenta" href="/mi-cuenta" asChild>
             <TabButton icon={{ web: 'account_circle' }}>Mi cuenta</TabButton>
           </TabTrigger>
-        </TabList>
-      </SafeAreaView>
+        </SafeAreaView>
+      </TabList>
     </Tabs>
   );
 }
