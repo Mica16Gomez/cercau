@@ -11,7 +11,7 @@ export default function SeleccionarRolScreen() {
   const { cargando } = useAutenticacion();
   const [rol, setRol] = useState<RolUsuario | null>(null);
   return (
-    <PantallaAutenticacion titulo="Tu lugar en Cercau" destacado="CREÁ TU CUENTA · PASO 1 DE 2" descripcion="Elegí cómo querés ser parte de la comunidad. Después completás tus datos.">
+    <PantallaAutenticacion titulo="¿Cómo querés usar Cercau?" destacado="CREÁ TU CUENTA · PASO 1 DE 2" descripcion="Hay un lugar para vos en el barrio. Elegí tu tipo de cuenta.">
       <SelectorRol valor={rol} onChange={setRol} deshabilitado={cargando} />
       <BotonCuenta titulo="Continuar" deshabilitado={cargando || !rol}
         icono={{ ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' }}

@@ -24,13 +24,17 @@ El registro permite elegir el rol antes del formulario y modificarlo dentro del 
 
 ## Pantallas y componentes visuales
 
-- **Iniciar sesión:** marca y bienvenida, correo, contraseña con control de visibilidad, validación debajo de cada campo, error de credenciales y botón con indicador de carga.
+- **Iniciar sesión:** encabezado barrial con “Volvé a conectar con tu barrio”, correo, contraseña con control de visibilidad, validación debajo de cada campo, error de credenciales y botón con indicador de carga. Incluye un espacio informativo para Face ID.
 - **Seleccionar rol:** tarjetas seleccionables para Vecino y Comercio, explicación de ambos y botón Continuar.
-- **Registrarse:** nombre completo, correo, contraseña y confirmación con visibilidad independiente, selección de rol dentro del formulario, estados de carga, error y éxito.
+- **Registrarse:** título “Sumate a Cercau”, nombre completo, correo, contraseña y confirmación con visibilidad independiente, selección de rol dentro del formulario, estados de carga, error y éxito.
 - **Mi cuenta sin sesión:** bienvenida, beneficios concretos del perfil y accesos a inicio y registro.
-- **Mi cuenta con sesión:** iniciales, nombre, correo, distintivo y explicación según el rol, tarjeta de datos, opciones deshabilitadas de Editar perfil y Configuración con la etiqueta Próximamente. Cerrar sesión requiere confirmar en un diálogo.
+- **Mi cuenta con sesión:** encabezado barrial, tarjeta compacta de perfil con inicial, nombre, correo, rol y botón pequeño Editar; tarjeta ilustrada de saludo “¡Hola, [nombre]!” y “Tu barrio, siempre cerca.”; sección Tu cuenta con una grilla de Favoritos, Mis reseñas, Seguridad y Face ID. Editar, Favoritos y Mis reseñas muestran avisos informativos. Seguridad queda deshabilitada para la siguiente etapa y Face ID tiene un interruptor apagado y deshabilitado. Cerrar sesión conserva su diálogo de confirmación.
 
-Los componentes de `src/components/autenticacion/` comparten campos, botones, enlaces, tarjetas, identidad de Cercau, selector de rol y diálogo de cierre. Reutilizan los colores de `src/constants/theme.ts`, con 20 px de margen horizontal y separaciones de 28 px entre secciones, como Buscar. Los formularios tienen ancho máximo para web, áreas seguras y desplazamiento con ajuste por teclado. Los campos incluyen etiquetas, ayudas, errores y foco visible; botones y roles informan su estado accesible.
+Los componentes de `src/components/autenticacion/` comparten campos, botones, enlaces, tarjetas, identidad de Cercau, selector de rol y diálogo de cierre. Reutilizan los colores de `src/constants/theme.ts`, con 20 px de margen horizontal y separaciones de 24 px entre secciones. Los formularios tienen ancho máximo para web, áreas seguras y desplazamiento con ajuste por teclado. Los campos incluyen etiquetas, ayudas, errores y foco visible; botones y roles informan su estado accesible.
+
+La identidad **Barrio contemporáneo** usa verde bosque, crema cálido, salvia, terracota y mostaza, con variantes para tema oscuro. `encabezado-barrial.tsx` dibuja una casa, un comercio y un árbol con vistas simples. `face-id-preparado.tsx` presenta el futuro acceso biométrico sin ejecutarlo. `accesos-cuenta.tsx` reúne el botón Editar y la grilla informativa. La barra inferior conserva sus cuatro destinos y adopta la misma paleta. No se agregaron dependencias ni se modificaron los servicios, las validaciones o el proveedor de autenticación.
+
+El ajuste según las referencias adjuntas agrega `encabezado-cuenta.tsx` y `barrio-ilustrado.tsx`: un encabezado verde con la marca clara y un dibujo de árboles, edificios y farol, reutilizado en la tarjeta de saludo. La tarjeta de perfil se superpone ligeramente al encabezado y agrupa los datos junto a la inicial. Los fondos completos de los accesos son salvia para Favoritos y Face ID, terracota para Mis reseñas y mostaza para Seguridad. El interruptor de la imagen se adapta al alcance solicitado: `value={false}` y `disabled`, sin permisos ni autenticación biométrica. `TarjetaCuenta` acepta un estilo opcional para compactar el perfil; los demás formularios conservan su presentación. La barra inferior conserva también el contenido que tenía antes de este ajuste.
 
 En web, `src/hooks/use-color-scheme.web.ts` usa `useSyncExternalStore` para escuchar los cambios de `Appearance`. Esto mantiene fondos y textos sincronizados al cambiar entre claro y oscuro sin recargar. El HTML inicial conserva el tema claro para coincidir con la primera renderización del navegador.
 
@@ -89,7 +93,7 @@ Expo genera los tipos de rutas al iniciar Metro. Si después de agregar rutas Ty
 8. Probar un email inválido, un nombre vacío, una contraseña corta, dos contraseñas distintas y un email ya registrado durante la misma ejecución.
 9. Probar la flecha Volver, el botón Atrás de Android y los enlaces entre formularios. Tras ingresar, Atrás no debe mostrar un formulario utilizable con una sesión abierta.
 10. Mostrar y ocultar ambas contraseñas, comprobar que conservan lo escrito y revisar los formularios con el teclado abierto. Probar Siguiente para pasar de campo y el envío desde el teclado.
-11. Comprobar que Editar perfil y Configuración indican Próximamente y no navegan ni producen errores.
+11. Comprobar que Editar, Favoritos y Mis reseñas muestran un aviso informativo y permiten volver al perfil. Confirmar que Seguridad queda preparada y Face ID indica Apagado, sin solicitar permisos.
 12. Revisar tema oscuro, tamaño de texto aumentado y VoiceOver/TalkBack. Confirmar que se leen las etiquetas y los estados de botones y roles.
 
 El indicador de recuperación se muestra en Mi cuenta y en las pantallas de autenticación. Buscar, Promociones y Mapa permanecen disponibles durante esa recuperación.
@@ -108,7 +112,44 @@ La reanudación corrigió errores de comillas y esperas del script local de revi
 
 **Pendiente en dispositivo físico:** comprobar el almacenamiento nativo de SecureStore al cerrar y reabrir la app, el teclado, las áreas seguras y VoiceOver/TalkBack. Las pruebas de almacenamiento usan un sustituto de SecureStore; la recarga comprobada en navegador usa localStorage. No equivalen a una prueba del almacenamiento nativo en un celular.
 
-## Documentación consultada
+## Revisión Barrio contemporáneo — 13 de octubre de 2026
+
+Archivos de esta etapa:
+
+| Archivos | Cambio |
+| --- | --- |
+| `src/app/iniciar-sesion.tsx`, `registrarse.tsx`, `seleccionar-rol.tsx` | Encabezados y presentación de los formularios; Face ID preparado en login. |
+| `src/app/(tabs)/mi-cuenta.tsx` | Perfil, saludo, grilla de cuatro accesos y presentación del cierre. |
+| `src/constants/theme.ts` | Paleta global clara y oscura. |
+| `src/components/app-tabs.tsx`, `app-tabs.web.tsx` | Colores y énfasis de la pestaña seleccionada; mismos destinos. |
+| `src/components/autenticacion/controles.tsx`, `identidad-cuenta.tsx`, `pantalla-autenticacion.tsx`, `selector-rol.tsx`, `confirmacion-cierre.tsx` | Estilos reutilizables de campos, botones, tarjetas, identidad y confirmación. |
+| `src/components/autenticacion/encabezado-barrial.tsx`, `face-id-preparado.tsx`, `accesos-cuenta.tsx` | Componentes nuevos para la ilustración, el futuro acceso biométrico y la grilla. |
+| `src/components/autenticacion/encabezado-cuenta.tsx`, `barrio-ilustrado.tsx` | Ajuste a las referencias adjuntas: encabezado amplio, saludo ilustrado y dibujo reutilizable. |
+| `docs/autenticacion.md` | Explicación del diseño, validaciones y recorrido de prueba. |
+
+- Validaciones: `npm.cmd run lint -- --no-cache`, `.\node_modules\.bin\tsc.cmd --noEmit` y `node --test tests/autenticacion.test.cjs` (12 pruebas).
+- Exportación para iOS: `.\node_modules\.bin\expo.cmd export --platform ios --output-dir .expo/validacion-barrio-ios-final --max-workers 2`. Hermes requirió ejecutar la validación fuera del entorno restringido de Windows.
+- Recorrido en navegador: inicio de sesión, errores, visibilidad de contraseña, ambos roles, registro, cambio de rol conservando los campos, restauración tras recargar, redirección de una sesión abierta, cierre cancelado y confirmado y pestañas públicas. Los avisos de Editar, Favoritos y Mis reseñas se comprobaron; Seguridad y Face ID aparecen deshabilitados.
+- Capturas de login a 320 y 390 px, perfil, grilla, registro, roles y confirmación en `.expo/barrio-contemporaneo`. Se revisó el cambio de tema claro/oscuro y la recarga en oscuro. El recorrido terminó sin excepciones de la aplicación.
+- Git confirmó que Buscar, Promociones, Mapa, los layouts de rutas, el proveedor, los servicios, las validaciones, los tipos, las cuentas de prueba y las dependencias conservaron su contenido. El tema global y el aspecto de la barra sí se actualizaron.
+
+**Pendiente en iPhone:** probar teclado, áreas seguras, tamaño de texto y VoiceOver; cerrar y reabrir la app para comprobar SecureStore; cancelar y confirmar el cierre de sesión. Face ID y Seguridad están preparados visualmente para otra etapa. Editar, Favoritos y Mis reseñas solo muestran información y no modifican datos.
+
+Validación del ajuste según las referencias:
+
+- Lint, TypeScript y las 12 pruebas de autenticación aprobaron. El recorrido en navegador comprobó los avisos de los accesos, el interruptor apagado y deshabilitado, ambos roles, registro, restauración de sesión y cierre cancelado y confirmado, sin excepciones de la app.
+- Capturas nuevas en `.expo/referencia-barrio`: perfil a 390 y 320 px, grilla y tema oscuro. Se limitó el ancho de la ilustración del encabezado para separarla del título en pantallas pequeñas.
+- Se compararon huellas de los archivos con el estado previo de esta etapa: formularios, pantallas públicas, servicios, contexto, validaciones, tipos, datos, tema, layouts, barra inferior y dependencias permanecen iguales. Las modificaciones se concentran en Mi cuenta y sus componentes visuales.
+- Exportación de esta revisión: `.expo/validacion-referencia-barrio-ios`.
+
+## Documentación de esta revisión
+
+- [Barra nativa en Expo SDK 57](https://docs.expo.dev/versions/v57.0.0/sdk/router/native-tabs/).
+- [Iconos en Expo SDK 57](https://docs.expo.dev/versions/v57.0.0/sdk/symbols/).
+- [Alert en React Native 0.86](https://reactnative.dev/docs/0.86/alert).
+- [Interruptor en React Native 0.86](https://reactnative.dev/docs/0.86/switch).
+
+## Documentación consultada anteriormente
 
 - [Expo SecureStore](https://docs.expo.dev/versions/latest/sdk/securestore/).
 - [Autenticación con Expo Router](https://docs.expo.dev/router/advanced/authentication/).

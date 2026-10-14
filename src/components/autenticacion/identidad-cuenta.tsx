@@ -5,18 +5,6 @@ import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
 import type { RolUsuario } from '@/tipos/usuario';
 
-export function MarcaCercau() {
-  const tema = useTheme();
-  return (
-    <View style={estilos.marca} accessibilityLabel="Cercau, tu guía local" accessible>
-      <View style={[estilos.simbolo, { backgroundColor: tema.primarySoft }]}>
-        <SymbolView name={{ ios: 'leaf', android: 'eco', web: 'eco' }} size={23} tintColor={tema.primary} />
-      </View>
-      <ThemedText themeColor="primary" style={estilos.nombre}>Cercau</ThemedText>
-    </View>
-  );
-}
-
 export function DistintivoRol({ rol }: { rol: RolUsuario }) {
   const tema = useTheme();
   const esComercio = rol === 'comercio';
@@ -30,11 +18,10 @@ export function DistintivoRol({ rol }: { rol: RolUsuario }) {
 
 export function AvatarCuenta({ nombre }: { nombre: string }) {
   const tema = useTheme();
-  const partes = nombre.trim().split(/\s+/);
-  const iniciales = `${partes[0]?.[0] ?? ''}${partes.length > 1 ? partes[partes.length - 1][0] : ''}`.toLocaleUpperCase('es');
+  const inicial = nombre.trim()[0]?.toLocaleUpperCase('es') ?? '';
   return (
-    <View style={[estilos.avatar, { backgroundColor: tema.primarySoft }]} accessibilityLabel={`Iniciales de ${nombre}`} accessible>
-      <ThemedText themeColor="primary" style={estilos.iniciales}>{iniciales}</ThemedText>
+    <View style={[estilos.avatar, { backgroundColor: tema.primarySoft }]} accessibilityLabel={`Inicial de ${nombre}`} accessible>
+      <ThemedText themeColor="primary" style={estilos.iniciales}>{inicial}</ThemedText>
     </View>
   );
 }
@@ -58,19 +45,16 @@ export function PieCuenta() {
   const tema = useTheme();
   return (
     <View style={estilos.pie}>
-      <View style={[estilos.linea, { backgroundColor: tema.star }]} />
+      <View style={[estilos.linea, { backgroundColor: tema.mustard }]} />
       <ThemedText type="small" themeColor="textSecondary" style={estilos.centrado}>Cerca de vos. Cerca de lo nuestro.</ThemedText>
     </View>
   );
 }
 
 const estilos = StyleSheet.create({
-  marca: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  simbolo: { width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  nombre: { fontSize: 30, lineHeight: 38, fontWeight: '800', letterSpacing: -1.5 },
   distintivo: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6, borderRadius: 24, paddingHorizontal: 12, paddingVertical: 7 },
-  avatar: { width: 76, height: 76, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
-  iniciales: { fontSize: 28, lineHeight: 36, fontWeight: '700', letterSpacing: -0.5 },
+  avatar: { width: 64, height: 64, borderRadius: 28, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  iniciales: { fontSize: 30, lineHeight: 38, fontWeight: '800', letterSpacing: -0.5 },
   detalle: { flexDirection: 'row', alignItems: 'flex-start', gap: 14 },
   iconoDetalle: { width: 44, height: 44, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
   textos: { flex: 1, gap: 3 },

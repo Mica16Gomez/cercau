@@ -13,12 +13,12 @@ export function ConfirmacionCierre({ visible, cargando, error, onCancelar, onCon
   const tema = useTheme();
   return (
     <Modal transparent visible={visible} animationType="fade" onRequestClose={() => { if (!cargando) onCancelar(); }}>
-      <SafeAreaView style={estilos.fondo}>
+      <SafeAreaView style={[estilos.fondo, { backgroundColor: tema.overlay }]}>
         <ScrollView style={estilos.scroll} contentContainerStyle={estilos.contenido}>
         <View accessibilityViewIsModal role="dialog" accessibilityLabel="Confirmar cierre de sesión"
           style={[estilos.tarjeta, { backgroundColor: tema.backgroundElement, borderColor: tema.border }]}>
-          <View style={[estilos.icono, { backgroundColor: tema.primarySoft }]}>
-            <SymbolView name={{ ios: 'rectangle.portrait.and.arrow.right', android: 'logout', web: 'logout' }} size={28} tintColor={tema.primary} />
+          <View style={[estilos.icono, { backgroundColor: tema.terracottaSoft }]}>
+            <SymbolView name={{ ios: 'rectangle.portrait.and.arrow.right', android: 'logout', web: 'logout' }} size={28} tintColor={tema.terracotta} />
           </View>
           <ThemedText accessibilityRole="header" style={estilos.titulo}>¿Cerrar sesión?</ThemedText>
           <ThemedText themeColor="textSecondary">Podés seguir explorando los comercios de tu barrio y volver a ingresar cuando quieras.</ThemedText>
@@ -33,7 +33,7 @@ export function ConfirmacionCierre({ visible, cargando, error, onCancelar, onCon
 }
 
 const estilos = StyleSheet.create({
-  fondo: { flex: 1, backgroundColor: '#14201B99', padding: 20, justifyContent: 'center', alignItems: 'center' },
+  fondo: { flex: 1, padding: 20, justifyContent: 'center', alignItems: 'center' },
   scroll: { flex: 1, width: '100%', maxWidth: 420 },
   contenido: { flexGrow: 1, justifyContent: 'center', paddingVertical: 12 },
   tarjeta: { width: '100%', maxWidth: 420, borderRadius: 28, borderWidth: 1, padding: 24, gap: 20 },

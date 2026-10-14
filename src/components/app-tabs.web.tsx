@@ -13,7 +13,7 @@ export default function AppTabs() {
     <Tabs style={[styles.container, { backgroundColor: theme.background }]}>
       <TabSlot style={styles.content} />
       <TabList asChild>
-        <SafeAreaView edges={['bottom']} style={StyleSheet.flatten([styles.tabList, { borderColor: theme.border, backgroundColor: theme.backgroundElement }])}>
+        <SafeAreaView edges={['bottom', 'left', 'right']} style={StyleSheet.flatten([styles.tabList, { borderColor: theme.border, backgroundColor: theme.tabBackground }])}>
           <TabTrigger name="index" href="/" asChild>
             <TabButton icon={{ web: 'search' }}>Buscar</TabButton>
           </TabTrigger>
@@ -47,8 +47,8 @@ function TabButton({ children, isFocused, icon, ...props }: TabButtonProps) {
         isFocused && { backgroundColor: theme.primarySoft },
         pressed && styles.pressed,
       ]}>
-      <SymbolView name={icon} tintColor={isFocused ? theme.primary : theme.textSecondary} size={22} />
-      <ThemedText style={styles.tabLabel} themeColor={isFocused ? 'primary' : 'textSecondary'}>
+      <SymbolView name={icon} tintColor={isFocused ? theme.text : theme.textSecondary} size={22} />
+      <ThemedText style={[styles.tabLabel, isFocused && styles.selectedLabel]} themeColor={isFocused ? 'text' : 'textSecondary'}>
         {children}
       </ThemedText>
     </Pressable>
@@ -61,5 +61,6 @@ const styles = StyleSheet.create({
   tabList: { flexDirection: 'row', borderTopWidth: 1, paddingHorizontal: 8, paddingVertical: 8, gap: 4 },
   tabButton: { flex: 1, minHeight: 56, paddingVertical: 8, paddingHorizontal: 2, alignItems: 'center', justifyContent: 'center', gap: 4, borderRadius: 16 },
   tabLabel: { fontSize: 11, lineHeight: 16, fontWeight: '600', textAlign: 'center' },
+  selectedLabel: { fontWeight: '700' },
   pressed: { opacity: 0.65 },
 });

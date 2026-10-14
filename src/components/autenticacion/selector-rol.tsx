@@ -6,8 +6,8 @@ import { useTheme } from '@/hooks/use-theme';
 import type { RolUsuario } from '@/tipos/usuario';
 
 const opciones = [
-  { rol: 'vecino', titulo: 'Vecino', breve: 'Busco comercios', descripcion: 'Descubrí los comercios de tu barrio y encontrá lo que necesitás cerca tuyo.', icono: { ios: 'person.2', android: 'people', web: 'people' } },
-  { rol: 'comercio', titulo: 'Comercio', breve: 'Tengo un comercio', descripcion: 'Sumate con tu identidad comercial y empezá a formar parte de la comunidad local.', icono: { ios: 'storefront', android: 'storefront', web: 'storefront' } },
+  { rol: 'vecino', titulo: 'Soy vecino', breve: 'Busco comercios', descripcion: 'Descubrí los comercios de tu barrio y encontrá lo que necesitás cerca tuyo.', icono: { ios: 'person.2', android: 'people', web: 'people' } },
+  { rol: 'comercio', titulo: 'Tengo un comercio', breve: 'Soy parte del comercio local', descripcion: 'Sumate con la identidad de tu comercio y formá parte de la comunidad local.', icono: { ios: 'storefront', android: 'storefront', web: 'storefront' } },
 ] as const;
 
 type Props = { valor: RolUsuario | null; onChange: (rol: RolUsuario) => void; compacto?: boolean; deshabilitado?: boolean; error?: string };
@@ -19,6 +19,7 @@ export function SelectorRol({ valor, onChange, compacto = false, deshabilitado =
       <View style={[estilos.opciones, compacto && estilos.fila]} accessibilityLabel="Tipo de cuenta" role="radiogroup">
         {opciones.map((opcion) => {
           const seleccionado = valor === opcion.rol;
+          const esComercio = opcion.rol === 'comercio';
           return (
             <Pressable key={opcion.rol} accessibilityRole="radio"
               accessibilityLabel={`${opcion.titulo}. ${compacto ? opcion.breve : opcion.descripcion}`}
@@ -27,10 +28,10 @@ export function SelectorRol({ valor, onChange, compacto = false, deshabilitado =
               style={({ pressed }) => [estilos.opcion, compacto && estilos.compacta, {
                 backgroundColor: seleccionado ? tema.primarySoft : tema.backgroundElement,
                 borderColor: seleccionado ? tema.primary : tema.border,
-              }, pressed && estilos.presionado]}>
+              }, (pressed || deshabilitado) && estilos.presionado]}>
               <View style={estilos.encabezado}>
-                <View style={[estilos.icono, compacto && estilos.iconoCompacto, { backgroundColor: seleccionado ? tema.backgroundElement : tema.primarySoft }]}>
-                  <SymbolView name={opcion.icono} size={compacto ? 23 : 30} tintColor={tema.primary} />
+                <View style={[estilos.icono, compacto && estilos.iconoCompacto, { backgroundColor: esComercio ? tema.terracottaSoft : tema.primarySoft }]}>
+                  <SymbolView name={opcion.icono} size={compacto ? 23 : 30} tintColor={esComercio ? tema.terracotta : tema.primary} />
                 </View>
                 <View style={[estilos.radio, { borderColor: seleccionado ? tema.primary : tema.border, backgroundColor: seleccionado ? tema.primary : tema.backgroundElement }]}>
                   {seleccionado && <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={14} tintColor={tema.onPrimary} />}

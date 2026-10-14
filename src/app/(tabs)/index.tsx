@@ -1,16 +1,20 @@
 import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Keyboard, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BusinessCard } from '@/components/business-card';
+import { EncabezadoBuscar, EncabezadoComercios } from '@/components/encabezado-buscar';
+import { LogoCercau } from '@/components/logo-cercau';
 import { ThemedText } from '@/components/themed-text';
 import { MaxContentWidth } from '@/constants/theme';
+import { useAutenticacion } from '@/contextos/autenticacion';
 import { categories, filterBusinesses, type Category } from '@/data/businesses';
 import { useTheme } from '@/hooks/use-theme';
 
 export default function SearchScreen() {
   const theme = useTheme();
+  const { usuario } = useAutenticacion();
   const [query, setQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<Category>('Todas');
   // Los favoritos viven en memoria: se reinician al cerrar o recargar la app.
@@ -40,18 +44,13 @@ export default function SearchScreen() {
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={styles.content}>
         <View style={styles.header}>
-          <ThemedText style={styles.brand} themeColor="primary">Cercau</ThemedText>
-          <View style={[styles.localBadge, { backgroundColor: theme.primarySoft }]}>
+          <LogoCercau />
+          {usuario ? <ThemedText type="small" themeColor="primary" style={styles.greeting}>Hola, {usuario.nombre.trim().split(/\s+/)[0]}</ThemedText> : <View style={[styles.localBadge, { backgroundColor: theme.primarySoft }]}>
             <ThemedText style={styles.localBadgeText} themeColor="primary">TU GUÍA LOCAL</ThemedText>
-          </View>
+          </View>}
         </View>
 
-        <View style={styles.introduction}>
-          <ThemedText accessibilityRole="header" style={styles.headline}>
-            Encontrá comercios cerca tuyo
-          </ThemedText>
-          <ThemedText themeColor="textSecondary">Lo mejor de tu barrio, en un solo lugar.</ThemedText>
-        </View>
+        <EncabezadoBuscar />
 
         <View style={[styles.searchBox, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
           <SymbolView
@@ -69,7 +68,7 @@ export default function SearchScreen() {
             autoCorrect={false}
             returnKeyType="search"
             selectionColor={theme.primary}
-            style={[styles.searchInput, { color: theme.text }]}
+            style={[styles.searchInput, { color: theme.text, outlineColor: theme.primary }]}
           />
           {query.length > 0 && (
             <Pressable
@@ -84,6 +83,18 @@ export default function SearchScreen() {
               />
             </Pressable>
           )}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Buscar comercios"
+            accessibilityHint="Cierra el teclado y mantiene los resultados actuales."
+            onPress={Keyboard.dismiss}
+            style={({ pressed }) => [styles.searchButton, { backgroundColor: theme.mustard }, pressed && styles.pressed]}>
+            <SymbolView
+              name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }}
+              tintColor={theme.forest}
+              size={24}
+            />
+          </Pressable>
         </View>
 
         <View style={styles.categoriesSection}>
@@ -106,12 +117,12 @@ export default function SearchScreen() {
                   style={({ pressed }) => [
                     styles.category,
                     {
-                      backgroundColor: isSelected ? theme.primary : theme.backgroundElement,
-                      borderColor: isSelected ? theme.primary : theme.border,
+                      backgroundColor: isSelected ? theme.forest : theme.backgroundElement,
+                      borderColor: isSelected ? theme.forest : theme.border,
                     },
                     pressed && styles.pressed,
                   ]}>
-                  <ThemedText type="smallBold" themeColor={isSelected ? 'onPrimary' : 'textSecondary'}>
+                  <ThemedText type="smallBold" themeColor={isSelected ? 'onForest' : 'text'}>
                     {category}
                   </ThemedText>
                 </Pressable>
@@ -121,22 +132,7 @@ export default function SearchScreen() {
         </View>
 
         <View style={styles.resultsSection}>
-          <View style={styles.resultsHeading}>
-            <ThemedText accessibilityRole="header" style={styles.sectionTitle}>Comercios cercanos</ThemedText>
-            <View style={[styles.count, { backgroundColor: theme.primarySoft }]}>
-              <ThemedText
-                type="smallBold"
-                themeColor="primary"
-                accessibilityLiveRegion="polite"
-                accessibilityLabel={`${visibleBusinesses.length} comercios encontrados`}>
-                {visibleBusinesses.length}
-              </ThemedText>
-            </View>
-          </View>
-          <ThemedText type="small" themeColor="textSecondary">
-            Comercios ficticios · Distancias de ejemplo
-          </ThemedText>
-
+          <EncabezadoComercios cantidad={visibleBusinesses.length} />
           <View style={styles.businessList}>
             {visibleBusinesses.map((business) => (
               <BusinessCard
@@ -186,10 +182,10 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: MaxContentWidth,
     alignSelf: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 32,
-    gap: 28,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 48,
+    gap: 20,
   },
   header: {
     flexDirection: 'row',
@@ -197,39 +193,39 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 12,
+    paddingHorizontal: 4,
   },
-  brand: { fontSize: 32, lineHeight: 40, fontWeight: '800', letterSpacing: -1.5 },
+  greeting: { flexShrink: 1, fontWeight: '600' },
   localBadge: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20 },
   localBadgeText: { fontSize: 10, lineHeight: 16, fontWeight: '700', letterSpacing: 1.2 },
-  introduction: { gap: 10 },
-  headline: { fontSize: 32, lineHeight: 39, fontWeight: '700', letterSpacing: -0.8 },
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderRadius: 18,
-    paddingLeft: 16,
-    paddingRight: 8,
+    borderRadius: 30,
+    paddingLeft: 14,
+    paddingRight: 6,
     minHeight: 58,
-    gap: 10,
+    gap: 8,
+    boxShadow: '0px 3px 12px rgba(23, 63, 53, 0.05)',
   },
   searchInput: { flex: 1, minWidth: 0, fontSize: 16, paddingVertical: 16 },
   clearButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  categoriesSection: { gap: 12 },
-  sectionTitle: { fontSize: 20, lineHeight: 28, fontWeight: '700', flexShrink: 1 },
-  categories: { gap: 8, paddingRight: 2 },
+  searchButton: { width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  categoriesSection: { gap: 10 },
+  sectionTitle: { fontSize: 22, lineHeight: 29, fontWeight: '800', flexShrink: 1 },
+  categories: { gap: 8, paddingRight: 4 },
   category: {
     minHeight: 44,
     justifyContent: 'center',
+    alignItems: 'center',
     borderWidth: 1,
     borderRadius: 24,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
   },
   resultsSection: { gap: 8 },
-  resultsHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
-  count: { minWidth: 30, minHeight: 30, padding: 4, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
-  businessList: { gap: 14, marginTop: 10 },
+  businessList: { gap: 12 },
   emptyState: { borderWidth: 1, borderRadius: 24, padding: 24, gap: 12, alignItems: 'center' },
   emptyTitle: { fontSize: 18, fontWeight: '700', textAlign: 'center' },
   centeredText: { textAlign: 'center' },

@@ -6,11 +6,12 @@ export default function AppTabs() {
 
   return (
     <NativeTabs
-      backgroundColor={colors.backgroundElement}
+      backgroundColor={colors.tabBackground}
+      shadowColor={colors.border}
       tintColor={colors.primary}
       indicatorColor={colors.primarySoft}
-      iconColor={{ default: colors.textSecondary, selected: colors.primary }}
-      labelStyle={{ default: { color: colors.textSecondary }, selected: { color: colors.primary } }}>
+      iconColor={{ default: colors.textSecondary, selected: colors.text }}
+      labelStyle={{ default: { color: colors.textSecondary, fontWeight: '500' }, selected: { color: colors.text, fontWeight: '700' } }}>
       <NativeTabs.Trigger name="index" disableTransparentOnScrollEdge>
         <NativeTabs.Trigger.Label>Buscar</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="magnifyingglass" md="search" />

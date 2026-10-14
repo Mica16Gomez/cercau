@@ -1,6 +1,6 @@
 import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 import { useId, useState, type PropsWithChildren, type Ref } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, TextInput, View, type StyleProp, type TextInputProps, type ViewStyle } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
@@ -9,14 +9,16 @@ type BotonProps = {
   titulo: string;
   onPress: () => void;
   secundario?: boolean;
+  peligro?: boolean;
   deshabilitado?: boolean;
   cargando?: boolean;
   icono?: SymbolViewProps['name'];
 };
 
-export function BotonCuenta({ titulo, onPress, secundario = false, deshabilitado = false, cargando = false, icono }: BotonProps) {
+export function BotonCuenta({ titulo, onPress, secundario = false, peligro = false, deshabilitado = false, cargando = false, icono }: BotonProps) {
   const tema = useTheme();
   const bloqueado = deshabilitado || cargando;
+  const colorTexto = peligro ? 'favorite' : secundario ? 'primary' : 'onForest';
   return (
     <Pressable
       accessibilityRole="button"
@@ -26,12 +28,15 @@ export function BotonCuenta({ titulo, onPress, secundario = false, deshabilitado
       onPress={onPress}
       style={({ pressed }) => [
         estilos.boton,
-        { backgroundColor: secundario ? tema.primarySoft : tema.primary },
+        {
+          backgroundColor: peligro ? tema.terracottaSoft : secundario ? tema.backgroundElement : tema.buttonBackground,
+          borderColor: peligro ? tema.terracotta : secundario ? tema.border : tema.buttonBackground,
+        },
         (pressed || bloqueado) && estilos.atenuado,
       ]}>
-      {cargando && <ActivityIndicator color={secundario ? tema.primary : tema.onPrimary} />}
-      {!cargando && icono && <SymbolView name={icono} tintColor={secundario ? tema.primary : tema.onPrimary} size={20} />}
-      <ThemedText themeColor={secundario ? 'primary' : 'onPrimary'} style={estilos.textoBoton}>
+      {cargando && <ActivityIndicator color={tema[colorTexto]} />}
+      {!cargando && icono && <SymbolView name={icono} tintColor={tema[colorTexto]} size={20} />}
+      <ThemedText themeColor={colorTexto} style={estilos.textoBoton}>
         {titulo}
       </ThemedText>
     </Pressable>
@@ -56,7 +61,7 @@ export function CampoCuenta({ etiqueta, error, ayuda, esContrasena = false, icon
     <View style={estilos.campo}>
       <ThemedText nativeID={`${identificador}-etiqueta`} type="smallBold">{etiqueta}</ThemedText>
       <View style={[estilos.contenedorEntrada, {
-        backgroundColor: tema.background,
+        backgroundColor: enfocado ? tema.backgroundElement : tema.background,
         borderColor: error ? tema.favorite : enfocado ? tema.primary : tema.border,
       }]}>
         {icono && <SymbolView name={icono} size={20} tintColor={enfocado ? tema.primary : tema.textSecondary} />}
@@ -114,7 +119,7 @@ export function MensajeError({ mensaje }: { mensaje: string | null }) {
   const tema = useTheme();
   if (!mensaje) return null;
   return (
-    <View style={[estilos.error, { backgroundColor: tema.backgroundElement, borderColor: tema.favorite }]}>
+    <View style={[estilos.error, { backgroundColor: tema.terracottaSoft, borderColor: tema.favorite }]}>
       <ThemedText accessibilityRole="alert" accessibilityLiveRegion="polite" themeColor="favorite" type="small">
         {mensaje}
       </ThemedText>
@@ -132,13 +137,13 @@ export function IndicadorSesion() {
   );
 }
 
-export function TarjetaCuenta({ children }: PropsWithChildren) {
+export function TarjetaCuenta({ children, style }: PropsWithChildren<{ style?: StyleProp<ViewStyle> }>) {
   const tema = useTheme();
-  return <View style={[estilos.tarjeta, { backgroundColor: tema.backgroundElement, borderColor: tema.border }]}>{children}</View>;
+  return <View style={[estilos.tarjeta, { backgroundColor: tema.backgroundElement, borderColor: tema.border }, style]}>{children}</View>;
 }
 
 const estilos = StyleSheet.create({
-  boton: { minHeight: 56, borderRadius: 18, paddingHorizontal: 20, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
+  boton: { minHeight: 56, borderRadius: 18, borderWidth: 1, paddingHorizontal: 20, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
   textoBoton: { fontWeight: '700', textAlign: 'center', flexShrink: 1 },
   atenuado: { opacity: 0.6 },
   campo: { gap: 8 },
@@ -147,7 +152,7 @@ const estilos = StyleSheet.create({
   verContrasena: { width: 44, minHeight: 48, alignItems: 'center', justifyContent: 'center' },
   error: { padding: 16, borderRadius: 16, borderWidth: 1 },
   indicador: { paddingVertical: 32, gap: 16, alignItems: 'center' },
-  tarjeta: { padding: 20, borderRadius: 28, borderWidth: 1, gap: 20 },
+  tarjeta: { padding: 20, borderRadius: 24, borderWidth: 1, gap: 20 },
   enlace: { minHeight: 44, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 8 },
   textoEnlace: { fontWeight: '700', textDecorationLine: 'underline', textAlign: 'center' },
   accesoAlternativo: { alignItems: 'center', gap: 2 },
