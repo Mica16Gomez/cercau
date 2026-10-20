@@ -42,7 +42,7 @@ export default function IniciarSesionScreen() {
   }
 
   return (
-    <PantallaAutenticacion titulo="Volvé a conectar con tu barrio" destacado="BIENVENIDO A CERCAU" descripcion="Tus comercios, tu gente y lo que te queda cerca." permitirSesion={enviando} compacto>
+    <PantallaAutenticacion titulo="Iniciar sesión" descripcion="Accedé a tu cuenta para seguir explorando tu barrio." permitirSesion={enviando} compacto>
       <TarjetaCuenta>
         <CampoCuenta
           ref={emailRef} etiqueta="Correo electrónico" placeholder="nombre@correo.com" value={email}
@@ -66,7 +66,7 @@ export default function IniciarSesionScreen() {
         <BotonCuenta titulo={cargando ? 'Ingresando…' : 'Iniciar sesión'} cargando={cargando} onPress={ingresar} />
       </TarjetaCuenta>
       <AccesoAlternativo texto="¿Todavía no tenés cuenta?" titulo="Crear una cuenta" deshabilitado={cargando} onPress={() => router.replace('/seleccionar-rol')} />
-      <FaceIdPreparado />
+      <FaceIdPreparado variante="login" />
     </PantallaAutenticacion>
   );
 }

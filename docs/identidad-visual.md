@@ -1,5 +1,7 @@
 # Barrio contemporáneo — Cercau
 
+> La revisión actual del 19 de octubre de 2026 está documentada en [Rediseño natural contemporáneo](redisenio-natural.md). El contenido siguiente describe la etapa anterior y se conserva como antecedente.
+
 Revisión del 13 de octubre de 2026. Mi Cuenta se conserva como referencia visual: encabezado barrial, perfil, saludo y grilla. Esta etapa completa Inicio/Buscar y unifica el logo y los colores de la app. No se agregaron dependencias, no se cambió la navegación y no se hizo commit ni push.
 
 ## Paleta y componentes compartidos

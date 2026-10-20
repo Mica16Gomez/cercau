@@ -1,48 +1,47 @@
 import { StyleSheet, View } from 'react-native';
 
-import { BarrioIlustrado } from './barrio-ilustrado';
+import { BotonEditarCuenta } from './accesos-cuenta';
+import { AvatarCuenta, DistintivoRol } from './identidad-cuenta';
 
 import { LogoCercau } from '@/components/logo-cercau';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
+import type { Usuario } from '@/tipos/usuario';
 
-export function EncabezadoCuenta({ descripcion }: { descripcion: string }) {
-  const tema = useTheme();
+export function EncabezadoCuenta() {
   return (
-    <View style={[estilos.encabezado, { backgroundColor: tema.forest }]}>
-      <View style={[estilos.curva, { backgroundColor: tema.sage }]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" />
-      <LogoCercau variante="verde" />
-      <View style={estilos.textos}>
-        <ThemedText accessibilityRole="header" themeColor="onForest" style={estilos.titulo}>Mi cuenta</ThemedText>
-        <ThemedText themeColor="onForest" style={estilos.descripcion}>{descripcion}</ThemedText>
-      </View>
-      <View style={estilos.ilustracion}><BarrioIlustrado /></View>
+    <View style={estilos.encabezado}>
+      <View style={estilos.logo}><LogoCercau /></View>
     </View>
   );
 }
 
-export function SaludoCuenta({ nombre }: { nombre: string }) {
+export function ProfileHeader({ usuario, deshabilitado }: { usuario: Usuario; deshabilitado: boolean }) {
   const tema = useTheme();
   return (
-    <View style={[estilos.saludo, { backgroundColor: tema.promotionBackground }]}>
-      <View style={estilos.textoSaludo}>
-        <ThemedText accessibilityRole="header" themeColor="primary" style={estilos.tituloSaludo}>¡Hola, {nombre}!</ThemedText>
-        <ThemedText themeColor="primary" style={estilos.lema}>Tu barrio, siempre cerca.</ThemedText>
+    <View style={[estilos.perfil, { backgroundColor: tema.forest }]}>
+      <View style={estilos.editar}><BotonEditarCuenta deshabilitado={deshabilitado} /></View>
+      <View style={estilos.saludo}>
+        <AvatarCuenta nombre={usuario.nombre} />
+        <View style={estilos.textoSaludo}>
+          <ThemedText accessibilityRole="header" themeColor="onForest" style={estilos.tituloSaludo}>¡Hola, {usuario.nombre}!</ThemedText>
+          <ThemedText themeColor="onForest" style={estilos.lema}>Tu barrio, siempre cerca.</ThemedText>
+          <ThemedText selectable themeColor="onForest" style={estilos.correo}>{usuario.email}</ThemedText>
+          <DistintivoRol rol={usuario.rol} compacto />
+        </View>
       </View>
-      <BarrioIlustrado compacto />
     </View>
   );
 }
 
 const estilos = StyleSheet.create({
-  encabezado: { minHeight: 236, padding: 20, paddingBottom: 44, borderBottomLeftRadius: 32, borderBottomRightRadius: 32, overflow: 'hidden' },
-  curva: { position: 'absolute', top: -60, right: -32, width: 176, height: 151, borderRadius: 76, opacity: 0.18, transform: [{ rotate: '-18deg' }] },
-  textos: { marginTop: 20, gap: 8, width: '65%', zIndex: 1 },
-  titulo: { fontSize: 34, lineHeight: 40, fontWeight: '800', letterSpacing: -1 },
-  descripcion: { fontSize: 15, lineHeight: 22, opacity: 0.85 },
-  ilustracion: { position: 'absolute', right: 0, bottom: 0, width: '35%', overflow: 'hidden' },
-  saludo: { flexDirection: 'row', alignItems: 'center', borderRadius: 24, padding: 16, paddingRight: 4, gap: 4, overflow: 'hidden' },
-  textoSaludo: { flex: 1, gap: 6 },
-  tituloSaludo: { fontSize: 23, lineHeight: 29, fontWeight: '800', letterSpacing: -0.6 },
-  lema: { fontSize: 15, lineHeight: 21 },
+  encabezado: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 14 },
+  logo: { transform: [{ scale: 0.9 }], transformOrigin: 'left center', alignSelf: 'flex-start' },
+  perfil: { borderRadius: 20, paddingHorizontal: 16, paddingBottom: 18, paddingTop: 2, gap: 2 },
+  editar: { alignSelf: 'flex-end' },
+  saludo: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  textoSaludo: { flex: 1, minWidth: 0, gap: 4 },
+  tituloSaludo: { fontSize: 20, lineHeight: 26, fontWeight: '700', letterSpacing: -0.4 },
+  correo: { fontSize: 12, lineHeight: 17, flexShrink: 1 },
+  lema: { fontSize: 13, lineHeight: 18 },
 });

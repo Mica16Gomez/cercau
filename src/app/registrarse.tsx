@@ -82,7 +82,7 @@ export default function RegistrarseScreen() {
   }
 
   return (
-    <PantallaAutenticacion titulo="Sumate a Cercau" destacado="UN POCO SOBRE VOS · PASO 2 DE 2" descripcion="Estás a un paso de conectar con tu comunidad." permitirSesion={enviando}>
+    <PantallaAutenticacion titulo="Creá tu cuenta" destacado="TUS DATOS · PASO 2 DE 2" descripcion="Unos pocos datos para ser parte del barrio." permitirSesion={enviando} paso={2}>
       <TarjetaCuenta>
         <CampoCuenta
           ref={nombreRef} etiqueta="Nombre completo" placeholder="Tu nombre y apellido" value={nombre} onChangeText={setNombre}

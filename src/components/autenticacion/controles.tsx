@@ -3,6 +3,8 @@ import { useId, useState, type PropsWithChildren, type Ref } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, TextInput, View, type StyleProp, type TextInputProps, type ViewStyle } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { EstadoInterfaz } from '@/components/interfaz';
+import { Radii } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 type BotonProps = {
@@ -18,7 +20,7 @@ type BotonProps = {
 export function BotonCuenta({ titulo, onPress, secundario = false, peligro = false, deshabilitado = false, cargando = false, icono }: BotonProps) {
   const tema = useTheme();
   const bloqueado = deshabilitado || cargando;
-  const colorTexto = peligro ? 'favorite' : secundario ? 'primary' : 'onForest';
+  const colorTexto = peligro ? 'actionText' : secundario ? 'primary' : 'onAction';
   return (
     <Pressable
       accessibilityRole="button"
@@ -30,7 +32,7 @@ export function BotonCuenta({ titulo, onPress, secundario = false, peligro = fal
         estilos.boton,
         {
           backgroundColor: peligro ? tema.terracottaSoft : secundario ? tema.backgroundElement : tema.buttonBackground,
-          borderColor: peligro ? tema.terracotta : secundario ? tema.border : tema.buttonBackground,
+          borderColor: peligro ? tema.terracottaSoft : secundario ? tema.border : tema.buttonBackground,
         },
         (pressed || bloqueado) && estilos.atenuado,
       ]}>
@@ -62,7 +64,7 @@ export function CampoCuenta({ etiqueta, error, ayuda, esContrasena = false, icon
       <ThemedText nativeID={`${identificador}-etiqueta`} type="smallBold">{etiqueta}</ThemedText>
       <View style={[estilos.contenedorEntrada, {
         backgroundColor: enfocado ? tema.backgroundElement : tema.background,
-        borderColor: error ? tema.favorite : enfocado ? tema.primary : tema.border,
+        borderColor: error ? tema.error : enfocado ? tema.primary : tema.border,
       }]}>
         {icono && <SymbolView name={icono} size={20} tintColor={enfocado ? tema.primary : tema.textSecondary} />}
         <TextInput
@@ -71,7 +73,7 @@ export function CampoCuenta({ etiqueta, error, ayuda, esContrasena = false, icon
           accessibilityLabel={etiqueta}
           accessibilityHint={error ?? ayuda}
           accessibilityLabelledBy={`${identificador}-etiqueta`}
-          placeholderTextColor={tema.textSecondary}
+          placeholderTextColor={tema.textSecondaryStrong}
           selectionColor={tema.primary}
           secureTextEntry={esContrasena ? !visible : props.secureTextEntry}
           style={[estilos.entrada, { color: tema.text }, style]}
@@ -91,7 +93,7 @@ export function CampoCuenta({ etiqueta, error, ayuda, esContrasena = false, icon
         )}
       </View>
       {error ? (
-        <ThemedText accessibilityLiveRegion="polite" themeColor="favorite" type="small">{error}</ThemedText>
+        <ThemedText accessibilityLiveRegion="polite" themeColor="error" type="small">{error}</ThemedText>
       ) : ayuda ? <ThemedText themeColor="textSecondary" type="small">{ayuda}</ThemedText> : null}
     </View>
   );
@@ -101,7 +103,7 @@ export function EnlaceCuenta({ titulo, onPress, deshabilitado = false }: Pick<Bo
   return (
     <Pressable accessibilityRole="link" accessibilityState={{ disabled: deshabilitado }} disabled={deshabilitado} onPress={onPress}
       style={({ pressed }) => [estilos.enlace, (pressed || deshabilitado) && estilos.atenuado]}>
-      <ThemedText themeColor="primary" style={estilos.textoEnlace}>{titulo}</ThemedText>
+      <ThemedText themeColor="actionText" style={estilos.textoEnlace}>{titulo}</ThemedText>
     </Pressable>
   );
 }
@@ -109,7 +111,7 @@ export function EnlaceCuenta({ titulo, onPress, deshabilitado = false }: Pick<Bo
 export function AccesoAlternativo({ texto, ...props }: Pick<BotonProps, 'titulo' | 'onPress' | 'deshabilitado'> & { texto: string }) {
   return (
     <View style={estilos.accesoAlternativo}>
-      <ThemedText type="small" themeColor="textSecondary" style={estilos.centrado}>{texto}</ThemedText>
+      <ThemedText type="small" themeColor="textSecondaryStrong" style={estilos.centrado}>{texto}</ThemedText>
       <EnlaceCuenta {...props} />
     </View>
   );
@@ -119,8 +121,8 @@ export function MensajeError({ mensaje }: { mensaje: string | null }) {
   const tema = useTheme();
   if (!mensaje) return null;
   return (
-    <View style={[estilos.error, { backgroundColor: tema.terracottaSoft, borderColor: tema.favorite }]}>
-      <ThemedText accessibilityRole="alert" accessibilityLiveRegion="polite" themeColor="favorite" type="small">
+    <View style={[estilos.error, { backgroundColor: tema.errorBackground, borderColor: tema.error }]}>
+      <ThemedText accessibilityRole="alert" accessibilityLiveRegion="polite" themeColor="error" type="small">
         {mensaje}
       </ThemedText>
     </View>
@@ -128,13 +130,7 @@ export function MensajeError({ mensaje }: { mensaje: string | null }) {
 }
 
 export function IndicadorSesion() {
-  const tema = useTheme();
-  return (
-    <View style={estilos.indicador} accessibilityLiveRegion="polite">
-      <ActivityIndicator color={tema.primary} size="large" />
-      <ThemedText themeColor="textSecondary">Recuperando tu sesión…</ThemedText>
-    </View>
-  );
+  return <EstadoInterfaz tipo="cargando" titulo="Recuperando tu sesión…" />;
 }
 
 export function TarjetaCuenta({ children, style }: PropsWithChildren<{ style?: StyleProp<ViewStyle> }>) {
@@ -143,7 +139,7 @@ export function TarjetaCuenta({ children, style }: PropsWithChildren<{ style?: S
 }
 
 const estilos = StyleSheet.create({
-  boton: { minHeight: 56, borderRadius: 18, borderWidth: 1, paddingHorizontal: 20, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
+  boton: { minHeight: 56, borderRadius: Radii.pill, borderWidth: 1, paddingHorizontal: 20, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
   textoBoton: { fontWeight: '700', textAlign: 'center', flexShrink: 1 },
   atenuado: { opacity: 0.6 },
   campo: { gap: 8 },
@@ -151,8 +147,7 @@ const estilos = StyleSheet.create({
   entrada: { flex: 1, minWidth: 0, paddingVertical: 16, paddingRight: 8, fontSize: 16, outlineWidth: 0 },
   verContrasena: { width: 44, minHeight: 48, alignItems: 'center', justifyContent: 'center' },
   error: { padding: 16, borderRadius: 16, borderWidth: 1 },
-  indicador: { paddingVertical: 32, gap: 16, alignItems: 'center' },
-  tarjeta: { padding: 20, borderRadius: 24, borderWidth: 1, gap: 20 },
+  tarjeta: { padding: 20, borderRadius: Radii.large, borderWidth: 1, gap: 20 },
   enlace: { minHeight: 44, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 8 },
   textoEnlace: { fontWeight: '700', textDecorationLine: 'underline', textAlign: 'center' },
   accesoAlternativo: { alignItems: 'center', gap: 2 },

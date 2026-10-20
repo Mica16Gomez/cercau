@@ -5,13 +5,13 @@ import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
 import type { RolUsuario } from '@/tipos/usuario';
 
-export function DistintivoRol({ rol }: { rol: RolUsuario }) {
+export function DistintivoRol({ rol, compacto = false }: { rol: RolUsuario; compacto?: boolean }) {
   const tema = useTheme();
   const esComercio = rol === 'comercio';
   return (
-    <View style={[estilos.distintivo, { backgroundColor: esComercio ? tema.promotionBackground : tema.primarySoft }]}>
-      <SymbolView name={{ ios: esComercio ? 'storefront' : 'person', android: esComercio ? 'storefront' : 'person', web: esComercio ? 'storefront' : 'person' }} size={16} tintColor={esComercio ? tema.promotion : tema.primary} />
-      <ThemedText type="smallBold" themeColor={esComercio ? 'promotion' : 'primary'}>{esComercio ? 'Comercio' : 'Vecino'}</ThemedText>
+    <View style={[estilos.distintivo, compacto && estilos.distintivoCompacto, { backgroundColor: compacto ? tema.sage : esComercio ? tema.promotionBackground : tema.primarySoft }]}>
+      <SymbolView name={{ ios: esComercio ? 'storefront' : 'person', android: esComercio ? 'storefront' : 'person', web: esComercio ? 'storefront' : 'person' }} size={compacto ? 13 : 16} tintColor={compacto ? tema.forest : esComercio ? tema.promotion : tema.primary} />
+      <ThemedText type="smallBold" style={compacto ? estilos.textoRolCompacto : undefined} themeColor={compacto ? 'forest' : esComercio ? 'promotion' : 'primary'}>{esComercio ? 'Comercio' : 'Vecino'}</ThemedText>
     </View>
   );
 }
@@ -46,14 +46,16 @@ export function PieCuenta() {
   return (
     <View style={estilos.pie}>
       <View style={[estilos.linea, { backgroundColor: tema.mustard }]} />
-      <ThemedText type="small" themeColor="textSecondary" style={estilos.centrado}>Cerca de vos. Cerca de lo nuestro.</ThemedText>
+      <ThemedText type="small" themeColor="textSecondaryStrong" style={estilos.centrado}>Cerca de vos. Cerca de lo nuestro.</ThemedText>
     </View>
   );
 }
 
 const estilos = StyleSheet.create({
   distintivo: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6, borderRadius: 24, paddingHorizontal: 12, paddingVertical: 7 },
-  avatar: { width: 64, height: 64, borderRadius: 28, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  distintivoCompacto: { paddingHorizontal: 10, paddingVertical: 4, gap: 5 },
+  textoRolCompacto: { fontSize: 11, lineHeight: 16, fontWeight: '500' },
+  avatar: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   iniciales: { fontSize: 30, lineHeight: 38, fontWeight: '800', letterSpacing: -0.5 },
   detalle: { flexDirection: 'row', alignItems: 'flex-start', gap: 14 },
   iconoDetalle: { width: 44, height: 44, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },

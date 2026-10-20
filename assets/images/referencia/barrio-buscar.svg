@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="250" height="250" viewBox="0 0 250 250">
+  <path fill="#D4D8BB" d="M28 250v-61q0-8 8-8h18v-56l29-28h44v26h31v44h16v-58l28-29h48v170Z"/>
+  <path fill="#AEBB9A" d="M83 97h44v26h31v127H113V125Z"/>
+  <path fill="#B3C1A5" d="M208 80V55h8V34h14v21h8v25Z"/>
+  <path fill="#285B47" d="M220 80V69a4 4 0 0 1 8 0v11ZM63 250v-57a12 12 0 0 1 24 0v57Z"/>
+  <g fill="#FFFEF5"><rect x="76" y="143" width="8" height="13" rx="1"/><rect x="123" y="157" width="6" height="10" rx="1"/><rect x="137" y="157" width="6" height="10" rx="1"/><rect x="39" y="205" width="7" height="12" rx="2"/></g>
+  <path fill="#C0CAAD" d="M0 250c42-62 91-18 127-48 35-30 43-22 77-42 20-11 31-11 46-13v103Z"/>
+  <path fill="#56816A" d="M92 250c38-50 65-27 85-62 24-41 50-8 73-39v28c-24 29-46 4-68 38-15 24-42 27-50 35Z"/>
+  <path fill="#DCE2CD" d="M53 250c27-19 43-9 73-23 21-10 20-20 43-20-15 8-13 19-30 30l-17 13Z"/>
+  <path stroke="#285B47" stroke-width="4" d="M240 28v75"/>
+  <path fill="#477A61" d="M222 40c1-22 8-60 18-60 11 0 20 36 19 59-1 35-39 35-37 1Z" transform="translate(-5 28)"/>
+  <path fill="#EF6D27" d="M127 52a30 30 0 1 1 60 0c0 20-30 49-30 49s-30-29-30-49Z"/>
+  <circle cx="157" cy="51" r="11" fill="#E4ECD9"/>
+</svg>
