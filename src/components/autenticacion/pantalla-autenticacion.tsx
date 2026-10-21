@@ -17,11 +17,11 @@ type Props = PropsWithChildren<{ titulo: string; descripcion: string; destacado?
 
 export function PantallaAutenticacion({ titulo, descripcion, destacado, permitirSesion = false, compacto = false, paso, children }: Props) {
   const tema = useTheme();
-  const { usuario, recuperandoSesion, cargando, errorRecuperacion } = useAutenticacion();
+  const { usuario, recuperandoSesion, cargando, errorRecuperacion, reintentarRecuperacion } = useAutenticacion();
 
   // Una pantalla que quedó detrás del registro no debe interrumpir su estado de éxito.
   useFocusEffect(useCallback(() => {
-    if (!recuperandoSesion && usuario && !permitirSesion) router.dismissTo('/mi-cuenta');
+    if (!recuperandoSesion && usuario && !permitirSesion) router.replace('/mi-cuenta');
   }, [recuperandoSesion, usuario, permitirSesion]));
 
   return (
@@ -46,6 +46,9 @@ export function PantallaAutenticacion({ titulo, descripcion, destacado, permitir
           {recuperandoSesion || (usuario && !permitirSesion) ? <IndicadorSesion /> : (
             <>
               <MensajeError mensaje={errorRecuperacion} />
+              {errorRecuperacion && <Pressable accessibilityRole="button" accessibilityLabel="Reintentar recuperación" onPress={reintentarRecuperacion} style={estilos.volverRecuperacion}>
+                <ThemedText themeColor="actionText">Reintentar recuperación</ThemedText>
+              </Pressable>}
               {children}
             </>
           )}
@@ -69,4 +72,5 @@ const estilos = StyleSheet.create({
   barra: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 16 },
   volver: { width: 44, height: 44, borderRadius: 16, borderWidth: 1, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   presionado: { opacity: 0.65 },
+  volverRecuperacion: { minHeight: 44, justifyContent: 'center', alignItems: 'center' },
 });

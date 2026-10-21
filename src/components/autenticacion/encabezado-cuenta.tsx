@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { BotonEditarCuenta } from './accesos-cuenta';
@@ -6,6 +7,9 @@ import { AvatarCuenta, DistintivoRol } from './identidad-cuenta';
 import { LogoCercau } from '@/components/logo-cercau';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
+import { useConsulta } from '@/hooks/use-consulta';
+import { obtenerComerciosPorIds } from '@/servicios/comercios';
+import { EnlaceCuenta } from './controles';
 import type { Usuario } from '@/tipos/usuario';
 
 export function EncabezadoCuenta() {
@@ -18,6 +22,7 @@ export function EncabezadoCuenta() {
 
 export function ProfileHeader({ usuario, deshabilitado }: { usuario: Usuario; deshabilitado: boolean }) {
   const tema = useTheme();
+  const comercio = useConsulta(useCallback(() => obtenerComerciosPorIds(usuario.comercioId ? [usuario.comercioId] : []), [usuario.comercioId]));
   return (
     <View style={[estilos.perfil, { backgroundColor: tema.forest }]}>
       <View style={estilos.editar}><BotonEditarCuenta deshabilitado={deshabilitado} /></View>
@@ -28,6 +33,10 @@ export function ProfileHeader({ usuario, deshabilitado }: { usuario: Usuario; de
           <ThemedText themeColor="onForest" style={estilos.lema}>Tu barrio, siempre cerca.</ThemedText>
           <ThemedText selectable themeColor="onForest" style={estilos.correo}>{usuario.email}</ThemedText>
           <DistintivoRol rol={usuario.rol} compacto />
+          {usuario.rol === 'comercio' && <ThemedText themeColor="onForest" style={estilos.correo}>
+            {!usuario.comercioId ? 'Comercio aún sin asociar' : comercio.cargando ? 'Cargando comercio…' : comercio.error ? 'No pudimos cargar el comercio' : comercio.datos?.[0]?.name ?? 'Comercio asociado no disponible'}
+          </ThemedText>}
+          {comercio.error && <EnlaceCuenta titulo="Reintentar consulta del comercio" onPress={comercio.reintentar} deshabilitado={deshabilitado} />}
         </View>
       </View>
     </View>

@@ -1,7 +1,9 @@
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { View } from 'react-native';
 
-import { ProveedorAutenticacion } from '@/contextos/autenticacion';
+import { IndicadorSesion } from '@/components/autenticacion/controles';
+import { ProveedorAutenticacion, useAutenticacion } from '@/contextos/autenticacion';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -27,13 +29,29 @@ export default function RootLayout() {
     }}>
       <ProveedorAutenticacion>
         <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.background } }}>
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="iniciar-sesion" />
-          <Stack.Screen name="seleccionar-rol" />
-          <Stack.Screen name="registrarse" />
-        </Stack>
+        <Navegacion />
       </ProveedorAutenticacion>
     </ThemeProvider>
   );
+}
+
+function Navegacion() {
+  const theme = useTheme();
+  const { usuario, recuperandoSesion } = useAutenticacion();
+  if (recuperandoSesion) return <View style={{ flex: 1, justifyContent: 'center', backgroundColor: theme.background }}><IndicadorSesion /></View>;
+  return <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.background } }}>
+    <Stack.Screen name="(tabs)" />
+    <Stack.Protected guard={!usuario}>
+      <Stack.Screen name="iniciar-sesion" />
+      <Stack.Screen name="seleccionar-rol" />
+      <Stack.Screen name="registrarse" />
+    </Stack.Protected>
+    <Stack.Protected guard={!!usuario}>
+      <Stack.Screen name="cuenta-creada" />
+      <Stack.Screen name="editar-perfil" />
+      <Stack.Screen name="favoritos" />
+      <Stack.Screen name="ajustes-cuenta" />
+      <Stack.Screen name="mis-resenas" />
+    </Stack.Protected>
+  </Stack>;
 }

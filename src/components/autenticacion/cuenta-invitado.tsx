@@ -1,6 +1,5 @@
-import { Image } from 'expo-image';
 import { SymbolView } from 'expo-symbols';
-import { Alert, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { LogoCercau } from '@/components/logo-cercau';
 import { PortadaBarrial } from '@/components/portada-barrial';
@@ -14,14 +13,7 @@ export function CuentaInvitado({ deshabilitado, onIniciarSesion, onCrearCuenta }
   const tema = useTheme();
   const oscuro = useColorScheme() === 'dark';
   const colorAlternativo = oscuro ? tema.text : '#15234B';
-  const colorBorde = oscuro ? tema.border : '#8994B0';
   const colorNota = oscuro ? tema.textSecondary : '#69758D';
-
-  function avisarGoogle() {
-    const mensaje = 'El ingreso con Google estará disponible próximamente';
-    if (Platform.OS === 'web') window.alert(mensaje);
-    else Alert.alert('Ingreso con Google', mensaje);
-  }
 
   return (
     <View style={estilos.contenido}>
@@ -41,17 +33,6 @@ export function CuentaInvitado({ deshabilitado, onIniciarSesion, onCrearCuenta }
             <ThemedText style={[estilos.textoBoton, { color: colorAlternativo }]}>Crear una cuenta</ThemedText>
           </Pressable>
         </View>
-        <View style={estilos.separador}>
-          <View style={[estilos.linea, { backgroundColor: colorBorde }]} />
-          <ThemedText style={[estilos.o, { color: colorNota }]}>o</ThemedText>
-          <View style={[estilos.linea, { backgroundColor: colorBorde }]} />
-        </View>
-        <Pressable accessibilityRole="button" accessibilityLabel="Continuar con Google" accessibilityState={{ disabled: deshabilitado }}
-          disabled={deshabilitado} onPress={avisarGoogle}
-          style={({ pressed }) => [estilos.boton, estilos.botonGoogle, { borderColor: colorBorde }, (pressed || deshabilitado) && estilos.presionado]}>
-          <Image source={require('../../../assets/images/referencia/google-g.svg')} style={estilos.google} accessible={false} />
-          <ThemedText style={[estilos.textoGoogle, { color: colorAlternativo }]}>Continuar con Google</ThemedText>
-        </Pressable>
         <View style={estilos.seguridad}>
           <SymbolView name={{ ios: 'lock.shield', android: 'shield_lock', web: 'shield_lock' }} size={24} tintColor={colorNota} />
           <ThemedText style={[estilos.nota, { color: colorNota }]}>Tus datos están protegidos.</ThemedText>
@@ -73,12 +54,6 @@ const estilos = StyleSheet.create({
   botonPrincipal: { backgroundColor: '#DE7537', borderColor: '#DE7537' },
   textoBoton: { fontSize: 18, lineHeight: 26, fontWeight: '700', textAlign: 'center', flexShrink: 1 },
   textoPrincipal: { color: '#FFFFFF', fontSize: 20 },
-  separador: { flexDirection: 'row', alignItems: 'center', gap: 14, marginVertical: 12 },
-  linea: { height: 1, flex: 1 },
-  o: { fontSize: 18, lineHeight: 24 },
-  botonGoogle: { borderRadius: 16 },
-  google: { width: 27, height: 27, flexShrink: 0 },
-  textoGoogle: { fontSize: 17, lineHeight: 24, fontWeight: '600', textAlign: 'center', flexShrink: 1 },
   seguridad: { marginTop: 26, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
   nota: { fontSize: 13, lineHeight: 20, flexShrink: 1 },
   presionado: { opacity: 0.65 },

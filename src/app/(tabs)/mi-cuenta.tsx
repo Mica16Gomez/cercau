@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AccesosCuenta } from '@/components/autenticacion/accesos-cuenta';
 import { ConfirmacionCierre } from '@/components/autenticacion/confirmacion-cierre';
-import { IndicadorSesion, MensajeError, TarjetaCuenta } from '@/components/autenticacion/controles';
+import { EnlaceCuenta, IndicadorSesion, MensajeError, TarjetaCuenta } from '@/components/autenticacion/controles';
 import { CuentaInvitado } from '@/components/autenticacion/cuenta-invitado';
 import { EncabezadoCuenta, ProfileHeader } from '@/components/autenticacion/encabezado-cuenta';
 import { ThemedText } from '@/components/themed-text';
@@ -17,7 +17,7 @@ import { obtenerMensajeError } from '@/servicios/errores-autenticacion';
 
 export default function AccountScreen() {
   const tema = useTheme();
-  const { usuario, cargando, recuperandoSesion, errorRecuperacion, cerrarSesion } = useAutenticacion();
+  const { usuario, cargando, recuperandoSesion, errorRecuperacion, cerrarSesion, reintentarRecuperacion } = useAutenticacion();
   const [error, setError] = useState<string | null>(null);
   const [confirmandoSalida, setConfirmandoSalida] = useState(false);
 
@@ -27,6 +27,7 @@ export default function AccountScreen() {
     try {
       await cerrarSesion();
       setConfirmandoSalida(false);
+      router.replace('/mi-cuenta');
     } catch (error: unknown) {
       setError(obtenerMensajeError(error));
     }
@@ -43,6 +44,7 @@ export default function AccountScreen() {
         {recuperandoSesion ? <TarjetaCuenta><IndicadorSesion /></TarjetaCuenta> : (
           <>
             <MensajeError mensaje={errorRecuperacion} />
+            {errorRecuperacion && <EnlaceCuenta titulo="Reintentar recuperación" onPress={reintentarRecuperacion} deshabilitado={cargando} />}
             {usuario ? (
               <>
                 <ProfileHeader usuario={usuario} deshabilitado={cargando} />

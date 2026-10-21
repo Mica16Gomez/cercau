@@ -1,19 +1,10 @@
 import type { ImageSource } from 'expo-image';
+import type { CategoriaBusqueda, Comercio } from '@/tipos/comercio';
 
 // Datos exclusivos de Buscar: las vistas de Promociones y Mapa conservan sus ejemplos.
 export const categories = ['Todos', 'Comida', 'Servicios', 'Salud'] as const;
-export type Category = (typeof categories)[number];
-
-export type Business = {
-  id: string;
-  name: string;
-  category: 'Cafetería' | 'Panadería' | 'Florería';
-  filterCategory: Exclude<Category, 'Todos'>;
-  initials: string;
-  distance: string;
-  rating: string;
-  isOpen: boolean;
-};
+export type Category = CategoriaBusqueda;
+export type Business = Comercio;
 
 export const businesses: Business[] = [
   {

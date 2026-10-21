@@ -1,23 +1,19 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
 import { useRef, useState } from 'react';
 import { Keyboard, StyleSheet, TextInput, View } from 'react-native';
 
 import { AccesoAlternativo, BotonCuenta, CampoCuenta, MensajeError, TarjetaCuenta } from '@/components/autenticacion/controles';
-import { DistintivoRol } from '@/components/autenticacion/identidad-cuenta';
 import { PantallaAutenticacion } from '@/components/autenticacion/pantalla-autenticacion';
 import { SelectorRol } from '@/components/autenticacion/selector-rol';
 import { ThemedText } from '@/components/themed-text';
 import { useAutenticacion } from '@/contextos/autenticacion';
-import { useTheme } from '@/hooks/use-theme';
 import { ErrorAutenticacion, obtenerMensajeError } from '@/servicios/errores-autenticacion';
 import { validarRegistro, type CampoFormulario } from '@/servicios/validaciones-autenticacion';
 import { esRolUsuario, type RolUsuario } from '@/tipos/usuario';
 
 export default function RegistrarseScreen() {
   const parametros = useLocalSearchParams<{ rol?: string | string[] }>();
-  const { registrarse, cargando, usuario } = useAutenticacion();
-  const tema = useTheme();
+  const { registrarse, cargando } = useAutenticacion();
   const [rol, setRol] = useState<RolUsuario | null>(() => esRolUsuario(parametros.rol) ? parametros.rol : null);
   const [nombre, setNombre] = useState('');
   const [email, setEmail] = useState('');
@@ -28,7 +24,6 @@ export default function RegistrarseScreen() {
   const [tocados, setTocados] = useState<Partial<Record<CampoFormulario, boolean>>>({});
   const [intento, setIntento] = useState(false);
   const [enviando, setEnviando] = useState(false);
-  const [completado, setCompletado] = useState(false);
   const nombreRef = useRef<TextInput>(null);
   const emailRef = useRef<TextInput>(null);
   const contrasenaRef = useRef<TextInput>(null);
@@ -54,7 +49,7 @@ export default function RegistrarseScreen() {
       await registrarse({ nombre, email, contrasena, rol });
       setContrasena('');
       setConfirmacion('');
-      setCompletado(true);
+      router.replace('/cuenta-creada');
     } catch (error: unknown) {
       if (error instanceof ErrorAutenticacion && error.codigo === 'EMAIL_REGISTRADO') {
         setEmailRegistrado(error.message);
@@ -63,22 +58,6 @@ export default function RegistrarseScreen() {
     } finally {
       setEnviando(false);
     }
-  }
-
-  if (completado && usuario) {
-    return (
-      <PantallaAutenticacion titulo="Ya sos parte de Cercau" destacado="BIENVENIDO A LA COMUNIDAD" descripcion="Tu cuenta se creó correctamente." permitirSesion>
-        <TarjetaCuenta>
-          <View style={[estilos.exito, { backgroundColor: tema.primarySoft }]}>
-            <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={38} tintColor={tema.primary} />
-          </View>
-          <ThemedText accessibilityRole="alert" accessibilityLiveRegion="polite" style={estilos.saludo}>¡Qué bueno tenerte, {usuario.nombre}!</ThemedText>
-          <DistintivoRol rol={usuario.rol} />
-          <ThemedText themeColor="textSecondary">Tu perfil está listo. Encontrá tus datos y la información de tu cuenta en Mi cuenta.</ThemedText>
-          <BotonCuenta titulo="Ir a Mi cuenta" onPress={() => router.dismissTo('/mi-cuenta')} />
-        </TarjetaCuenta>
-      </PantallaAutenticacion>
-    );
   }
 
   return (
@@ -133,6 +112,4 @@ export default function RegistrarseScreen() {
 
 const estilos = StyleSheet.create({
   rol: { gap: 12 },
-  exito: { width: 80, height: 80, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
-  saludo: { fontSize: 23, lineHeight: 31, fontWeight: '700' },
 });

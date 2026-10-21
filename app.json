@@ -36,7 +36,14 @@
       [
         "expo-secure-store",
         {
-          "faceIDPermission": false
+          "faceIDPermission": "Cercau usa Face ID para verificar tu identidad cuando elegís ingresar con biometría."
+        }
+      ],
+      "expo-sqlite",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Cercau usa Face ID para verificar tu identidad cuando elegís ingresar con biometría."
         }
       ]
     ],

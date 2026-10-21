@@ -33,7 +33,7 @@ export default function IniciarSesionScreen() {
     try {
       await iniciarSesion({ email, contrasena });
       setContrasena('');
-      router.dismissTo('/mi-cuenta');
+      router.replace('/mi-cuenta');
     } catch (error: unknown) {
       setError(obtenerMensajeError(error));
     } finally {

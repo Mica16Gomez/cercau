@@ -1,14 +1,18 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BusinessCard } from '@/components/business-card';
+import { EnlaceCuenta, MensajeError } from '@/components/autenticacion/controles';
 import { EncabezadoBuscar, EncabezadoComercios } from '@/components/encabezado-buscar';
 import { LogoCercau } from '@/components/logo-cercau';
 import { CategoryChip, EstadoInterfaz, SearchField } from '@/components/interfaz';
 import { ThemedText } from '@/components/themed-text';
 import { useAutenticacion } from '@/contextos/autenticacion';
-import { categories, filterBusinesses, type Category } from '@/data/search-businesses';
+import { useConsulta } from '@/hooks/use-consulta';
+import { useFavoritos } from '@/hooks/use-favoritos';
+import { buscarComercios, obtenerCategorias } from '@/servicios/comercios';
+import type { CategoriaBusqueda } from '@/tipos/comercio';
 import { useTheme } from '@/hooks/use-theme';
 
 const categoryIcons = {
@@ -26,16 +30,11 @@ export default function SearchScreen() {
   const categoryWidth = Math.max(fontScale > 1.3 ? 96 : 66, (contentWidth - 24) / 4);
   const { usuario } = useAutenticacion();
   const [query, setQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<Category>('Todos');
-  // Los favoritos viven en memoria: se reinician al cerrar o recargar la app.
-  const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
-  const visibleBusinesses = filterBusinesses(query, selectedCategory);
-
-  function toggleFavorite(id: string) {
-    setFavoriteIds((current) =>
-      current.includes(id) ? current.filter((favoriteId) => favoriteId !== id) : [...current, id]
-    );
-  }
+  const [selectedCategory, setSelectedCategory] = useState<CategoriaBusqueda>('Todos');
+  const categorias = useConsulta(useCallback(() => obtenerCategorias(), []));
+  const comercios = useConsulta(useCallback(() => buscarComercios(query, selectedCategory), [query, selectedCategory]));
+  const { favoritos: favoriteIds, alternar, cargando, error, reintentar } = useFavoritos();
+  const visibleBusinesses = comercios.datos ?? [];
 
   function clearFilters() {
     setQuery('');
@@ -72,12 +71,17 @@ export default function SearchScreen() {
             contentInsetAdjustmentBehavior="never"
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={styles.categories}>
-            {categories.map((category) => <CategoryChip key={category} ancho={categoryWidth} titulo={category} icono={categoryIcons[category]} seleccionado={category === selectedCategory} onPress={() => setSelectedCategory(category)} />)}
+            {(categorias.datos ?? []).map((category) => <CategoryChip key={category} ancho={categoryWidth} titulo={category} icono={categoryIcons[category]} seleccionado={category === selectedCategory} onPress={() => setSelectedCategory(category)} />)}
           </ScrollView>
         </View>
 
         <View style={styles.resultsSection}>
+          {categorias.error && <EstadoInterfaz tipo="error" titulo="No pudimos cargar las categorías" accion="Reintentar" onPress={categorias.reintentar} />}
+          <MensajeError mensaje={error} />
+          {error && <EnlaceCuenta titulo="Reintentar guardado" onPress={reintentar} deshabilitado={cargando} />}
           <EncabezadoComercios cantidad={visibleBusinesses.length} onVerTodos={clearFilters} />
+          {comercios.cargando && <EstadoInterfaz tipo="cargando" titulo="Cargando comercios…" />}
+          {comercios.error && <EstadoInterfaz tipo="error" titulo="No pudimos cargar los comercios" descripcion={comercios.error} accion="Reintentar" onPress={comercios.reintentar} />}
           {visibleBusinesses.length > 0 && <ScrollView horizontal showsHorizontalScrollIndicator={false} contentInsetAdjustmentBehavior="never"
             keyboardShouldPersistTaps="handled" contentContainerStyle={styles.businessList}>
             {visibleBusinesses.map((business) => (
@@ -85,12 +89,13 @@ export default function SearchScreen() {
                 <BusinessCard
                   business={business}
                   isFavorite={favoriteIds.includes(business.id)}
-                  onToggleFavorite={() => toggleFavorite(business.id)}
+                  onToggleFavorite={() => void alternar(business.id)}
+                  deshabilitado={cargando}
                 />
               </View>
             ))}
           </ScrollView>}
-          {visibleBusinesses.length === 0 && (
+          {!comercios.cargando && !comercios.error && visibleBusinesses.length === 0 && (
             <EstadoInterfaz titulo="No encontramos comercios" descripcion="Probá con otro nombre o elegí otra categoría." accion="Limpiar filtros" onPress={clearFilters} />
           )}
         </View>

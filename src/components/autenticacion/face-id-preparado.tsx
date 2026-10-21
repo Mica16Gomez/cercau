@@ -1,18 +1,42 @@
+import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+
+import { MensajeError, EnlaceCuenta } from './controles';
 
 import { ThemedText } from '@/components/themed-text';
 import { Radii } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useAutenticacion } from '@/contextos/autenticacion';
+import { useBiometria } from '@/hooks/use-biometria';
+import { useAccionCuenta } from '@/hooks/use-accion-cuenta';
 
-// Es una presentación informativa. Todavía no ejecuta autenticación biométrica.
 export function FaceIdPreparado({ variante = 'informacion' }: { variante?: 'informacion' | 'login' }) {
   const tema = useTheme();
+  const { reingresoDisponible, reingresarConBiometria, cargando } = useAutenticacion();
+  const consulta = useBiometria();
+  const accion = useAccionCuenta();
+  const habilitado = reingresoDisponible && consulta.datos?.disponible && !cargando;
+  const descripcion = reingresoDisponible ? consulta.datos?.mensaje ?? 'Consultando dispositivo…' :
+    'Primero ingresá con correo y contraseña. Después podés activar la biometría en Mi cuenta.';
+  const estado = cargando ? 'Verificando…' : reingresoDisponible ? consulta.datos?.disponible ? 'Tocá para ingresar' : 'Usá tu correo' : 'Activá en Mi cuenta';
+  const Contenedor = habilitado ? Pressable : View;
+
+  function ingresar() {
+    if (!habilitado) return;
+    void accion.ejecutar(async () => {
+      await reingresarConBiometria();
+      router.replace('/mi-cuenta');
+    });
+  }
 
   // Login tiene una presentación propia; Mi cuenta conserva su versión informativa.
   if (variante === 'login') {
     return (
-      <View style={[estilos.ingresoRapido, { backgroundColor: tema.primarySoft }]}>
+      <View style={estilos.contenido}>
+      <Contenedor accessibilityRole={habilitado ? 'button' : undefined} accessibilityLabel={habilitado ? `Ingresar con ${consulta.datos?.nombre}` : undefined}
+        accessibilityState={{ disabled: !habilitado, busy: cargando }} onPress={ingresar}
+        style={[estilos.ingresoRapido, { backgroundColor: tema.primarySoft }]}>
         <View style={[estilos.iconoRapido, { backgroundColor: tema.forest }]}
           accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
           <SymbolView name={{ ios: 'faceid', android: 'face', web: 'face' }} tintColor={tema.onForest} size={24} />
@@ -21,13 +45,16 @@ export function FaceIdPreparado({ variante = 'informacion' }: { variante?: 'info
           <View style={estilos.encabezadoRapido}>
             <ThemedText style={estilos.tituloRapido}>Ingreso rápido</ThemedText>
             <View style={[estilos.estadoRapido, { borderColor: tema.primary }]}>
-              <ThemedText themeColor="primary" style={estilos.estado}>Próximamente</ThemedText>
+              <ThemedText themeColor="primary" style={estilos.estado}>{estado}</ThemedText>
             </View>
           </View>
           <ThemedText themeColor="primary" style={estilos.descripcionRapida}>
-            Usá el reconocimiento facial para ingresar sin contraseña
+            {descripcion}
           </ThemedText>
         </View>
+      </Contenedor>
+      <MensajeError mensaje={accion.error} />
+      {reingresoDisponible && !consulta.cargando && !consulta.datos?.disponible && <EnlaceCuenta titulo="Volver a consultar biometría" onPress={consulta.reintentar} deshabilitado={cargando} />}
       </View>
     );
   }
@@ -39,18 +66,19 @@ export function FaceIdPreparado({ variante = 'informacion' }: { variante?: 'info
           <SymbolView name={{ ios: 'faceid', android: 'face', web: 'face' }} tintColor={tema.primary} size={25} />
         </View>
         <View style={estilos.textos}>
-          <ThemedText type="smallBold">Acceso con Face ID</ThemedText>
+          <ThemedText type="smallBold">{consulta.datos?.nombre ?? 'Biometría'}</ThemedText>
           <View style={[estilos.etiqueta, { backgroundColor: tema.promotionBackground }]}>
-            <ThemedText themeColor="promotion" style={estilos.estado}>Próximamente</ThemedText>
+            <ThemedText themeColor="promotion" style={estilos.estado}>{estado}</ThemedText>
           </View>
         </View>
       </View>
-      <ThemedText type="small" themeColor="textSecondaryStrong">Más adelante vas a poder ingresar con reconocimiento facial.</ThemedText>
+      <ThemedText type="small" themeColor="textSecondaryStrong">{descripcion}</ThemedText>
     </View>
   );
 }
 
 const estilos = StyleSheet.create({
+  contenido: { gap: 12 },
   ingresoRapido: { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 12, borderRadius: Radii.card },
   iconoRapido: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   textosRapidos: { flex: 1, minWidth: 0, gap: 6 },

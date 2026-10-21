@@ -4,27 +4,29 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { IlustracionComercio } from '@/components/ilustracion-comercio';
-import { businessImages, type Business } from '@/data/search-businesses';
+import type { Comercio } from '@/tipos/comercio';
 import { useTheme } from '@/hooks/use-theme';
 
 type BusinessCardProps = {
-  business: Business;
+  business: Comercio;
   isFavorite: boolean;
   onToggleFavorite: () => void;
+  deshabilitado?: boolean;
 };
 
-export function BusinessCard({ business, isFavorite, onToggleFavorite }: BusinessCardProps) {
+export function BusinessCard({ business, isFavorite, onToggleFavorite, deshabilitado = false }: BusinessCardProps) {
   const theme = useTheme();
 
   return (
     <View style={[styles.card, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
       <View style={styles.photoContainer}>
-        {businessImages[business.id] ? <Image source={businessImages[business.id]} style={styles.photo} contentFit="cover" accessibilityLabel={`Fotografía ilustrativa de ${business.category.toLowerCase()}`} /> :
+        {business.imagen ? <Image source={business.imagen} style={styles.photo} contentFit="cover" accessibilityLabel={`Fotografía ilustrativa de ${business.category.toLowerCase()}`} /> :
           <IlustracionComercio categoria={business.category} iniciales={business.initials} />}
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`${isFavorite ? 'Quitar de' : 'Agregar a'} favoritos: ${business.name}`}
-          accessibilityState={{ selected: isFavorite }}
+          accessibilityState={{ selected: isFavorite, disabled: deshabilitado }}
+          disabled={deshabilitado}
           onPress={onToggleFavorite}
           style={({ pressed }) => [styles.favorite, pressed && styles.pressed]}>
           <View style={styles.favoriteIcon}>

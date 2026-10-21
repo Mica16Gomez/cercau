@@ -4,6 +4,8 @@ type CodigoError =
   | 'EMAIL_REGISTRADO'
   | 'ALMACENAMIENTO'
   | 'SESION_INVALIDA'
+  | 'BIOMETRIA'
+  | 'SIN_SESION'
   | 'OPERACION_EN_CURSO';
 
 export class ErrorAutenticacion extends Error {
