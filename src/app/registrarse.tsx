@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { router } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Keyboard, StyleSheet, TextInput, View } from 'react-native';
 
@@ -9,12 +9,9 @@ import { ThemedText } from '@/components/themed-text';
 import { useAutenticacion } from '@/contextos/autenticacion';
 import { ErrorAutenticacion, obtenerMensajeError } from '@/servicios/errores-autenticacion';
 import { validarRegistro, type CampoFormulario } from '@/servicios/validaciones-autenticacion';
-import { esRolUsuario, type RolUsuario } from '@/tipos/usuario';
 
 export default function RegistrarseScreen() {
-  const parametros = useLocalSearchParams<{ rol?: string | string[] }>();
   const { registrarse, cargando } = useAutenticacion();
-  const [rol, setRol] = useState<RolUsuario | null>(() => esRolUsuario(parametros.rol) ? parametros.rol : null);
   const [nombre, setNombre] = useState('');
   const [email, setEmail] = useState('');
   const [contrasena, setContrasena] = useState('');
@@ -28,7 +25,7 @@ export default function RegistrarseScreen() {
   const emailRef = useRef<TextInput>(null);
   const contrasenaRef = useRef<TextInput>(null);
   const confirmacionRef = useRef<TextInput>(null);
-  const errores = validarRegistro({ nombre, email, contrasena, confirmacion, rol });
+  const errores = validarRegistro({ nombre, email, contrasena, confirmacion });
 
   function errorCampo(campo: CampoFormulario) { return intento || tocados[campo] ? errores[campo] : undefined; }
   function marcar(campo: CampoFormulario) { setTocados((actual) => ({ ...actual, [campo]: true })); }
@@ -38,7 +35,7 @@ export default function RegistrarseScreen() {
     setError(null);
     setEmailRegistrado(undefined);
     setIntento(true);
-    if (Object.keys(errores).length > 0 || !esRolUsuario(rol)) {
+    if (Object.keys(errores).length > 0) {
       const primerCampo = errores.nombre ? nombreRef : errores.email ? emailRef : errores.contrasena ? contrasenaRef : errores.confirmacion ? confirmacionRef : null;
       primerCampo?.current?.focus();
       return;
@@ -46,7 +43,7 @@ export default function RegistrarseScreen() {
     Keyboard.dismiss();
     setEnviando(true);
     try {
-      await registrarse({ nombre, email, contrasena, rol });
+      await registrarse({ nombre, email, contrasena });
       setContrasena('');
       setConfirmacion('');
       router.replace('/cuenta-creada');
@@ -82,7 +79,7 @@ export default function RegistrarseScreen() {
         <CampoCuenta
           ref={contrasenaRef} etiqueta="Contraseña" placeholder="Creá una contraseña" value={contrasena} onChangeText={setContrasena}
           esContrasena autoCapitalize="none" autoCorrect={false} autoComplete="new-password"
-          textContentType="newPassword" maxLength={128} editable={!cargando}
+          textContentType="newPassword" maxLength={100} editable={!cargando}
           icono={{ ios: 'lock', android: 'lock_outline', web: 'lock_outline' }}
           ayuda="Usá al menos 8 caracteres." error={errorCampo('contrasena')} onBlur={() => marcar('contrasena')}
           returnKeyType="next" submitBehavior="submit" onSubmitEditing={() => confirmacionRef.current?.focus()}
@@ -90,16 +87,16 @@ export default function RegistrarseScreen() {
         <CampoCuenta
           ref={confirmacionRef} etiqueta="Confirmar contraseña" placeholder="Volvé a escribir tu contraseña" value={confirmacion} onChangeText={setConfirmacion}
           esContrasena autoCapitalize="none" autoCorrect={false} autoComplete="new-password"
-          textContentType="newPassword" maxLength={128} editable={!cargando} returnKeyType="go"
+          textContentType="newPassword" maxLength={100} editable={!cargando} returnKeyType="go"
           icono={{ ios: 'lock', android: 'lock_outline', web: 'lock_outline' }}
           error={errorCampo('confirmacion')} onBlur={() => marcar('confirmacion')}
           onSubmitEditing={crearCuenta}
         />
         <View style={estilos.rol}>
           <ThemedText type="smallBold">Tu tipo de cuenta</ThemedText>
-          <SelectorRol valor={rol} onChange={setRol} compacto deshabilitado={cargando} error={errorCampo('rol')} />
+          <SelectorRol valor="vecino" compacto deshabilitado />
           <ThemedText type="small" themeColor="textSecondary">
-            {rol === 'comercio' ? 'Un perfil para representar a tu comercio en la comunidad.' : rol === 'vecino' ? 'Un perfil para descubrir y acompañar a los comercios de tu barrio.' : 'Elegí cómo querés ser parte de Cercau.'}
+            Un perfil de vecino para descubrir los comercios de tu barrio. Las cuentas de comercio las crea el Centro Comercial.
           </ThemedText>
         </View>
         <MensajeError mensaje={error} />

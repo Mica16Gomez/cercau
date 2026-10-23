@@ -1,111 +1,75 @@
-import { CryptoDigestAlgorithm, digestStringAsync } from 'expo-crypto';
-import { Platform } from 'react-native';
-
-import { eliminarSesion, generarIdentificador, guardarSesion, leerSeguro, escribirSeguro, recuperarSesion } from './almacenamiento-sesion';
+import { eliminarSesion, guardarSesion, invalidarSesion, recuperarSesion } from './almacenamiento-sesion';
+import { clienteHttp } from './cliente-http';
 import { guardarUsuario, obtenerUsuario } from './cuenta';
-import { almacenamientoLocal } from './almacenamiento-local';
 import { ErrorAutenticacion } from './errores-autenticacion';
-import { validarContrasena, validarEmail, validarNombre } from './validaciones-autenticacion';
+import { validarInicioSesion, validarRegistro } from './validaciones-autenticacion';
 
-import { esRolUsuario, type DatosInicioSesion, type DatosRegistro, type Usuario } from '@/tipos/usuario';
+import { esUsuarioApi, type RespuestaUno, type SesionApi, type UsuarioApi } from '@/tipos/api';
+import type { DatosInicioSesion, DatosRegistro, Usuario } from '@/tipos/usuario';
 
-type CredencialLocal = { usuarioId: string; sal: string; resumen: string };
-
-// Cuentas ficticias de desarrollo. No son credenciales de un servidor real.
-const cuentasDemo = [
-  {
-    id: 'demo-vecino', nombre: 'Vecino de prueba', email: 'vecino@cercau.test', rol: 'vecino' as const, comercioId: null,
-  },
-  {
-    id: 'demo-comercio', nombre: 'Comercio de prueba', email: 'comercio@cercau.test', rol: 'comercio' as const, comercioId: 'panaderia-la-esquina',
-  },
-];
-
-const esperar = () => new Promise<void>((resolve) => setTimeout(resolve, 700));
-
-const resumen = (texto: string) => digestStringAsync(CryptoDigestAlgorithm.SHA256, texto);
-const claveCredencial = async (email: string) => `cercau.credencial.v1.${await resumen(email)}`;
-const crearPerfil = (datos: Pick<Usuario, 'id' | 'nombre' | 'email' | 'rol' | 'comercioId'>): Usuario => ({
-  ...datos, favoritos: [], rubrosDeInteres: [], avisosActivos: false, biometriaActiva: false,
-});
-
-async function obtenerCredencial(email: string): Promise<CredencialLocal | null> {
-  let contenido: string | null;
-  try {
-    const clave = await claveCredencial(email);
-    contenido = Platform.OS === 'web' ? await almacenamientoLocal.getItem(clave) : await leerSeguro(clave);
-  } catch { throw new ErrorAutenticacion('ALMACENAMIENTO', 'No pudimos leer esta cuenta. Intentá nuevamente.'); }
-  if (!contenido) return null;
-  try {
-    const valor: unknown = JSON.parse(contenido);
-    if (typeof valor === 'object' && valor !== null && 'usuarioId' in valor && typeof valor.usuarioId === 'string' &&
-      'sal' in valor && typeof valor.sal === 'string' && 'resumen' in valor && typeof valor.resumen === 'string') return valor as CredencialLocal;
-  } catch { /* El error se transforma en un mensaje del servicio. */ }
-  throw new ErrorAutenticacion('ALMACENAMIENTO', 'No pudimos leer esta cuenta. Reintentá el inicio de sesión.');
+// La identidad viene de la API. Perfil, preferencias y favoritos siguen locales
+// hasta su próxima etapa de integración; nunca guardamos datos del formulario.
+async function prepararUsuario(datos: UsuarioApi): Promise<Usuario> {
+  if (!esUsuarioApi(datos)) throw new ErrorAutenticacion('ERROR_INESPERADO', 'La API devolvió datos de cuenta que no pudimos interpretar.');
+  const local = await obtenerUsuario(datos.id);
+  return guardarUsuario({
+    id: datos.id, email: datos.email, rol: datos.rol, comercioId: datos.comercioId,
+    nombre: local?.nombre ?? datos.nombre,
+    favoritos: local?.favoritos ?? [], rubrosDeInteres: local?.rubrosDeInteres ?? [],
+    avisosActivos: local?.avisosActivos ?? false, biometriaActiva: local?.biometriaActiva ?? false,
+  });
 }
 
-function validarCredenciales({ email, contrasena }: DatosInicioSesion): string {
-  const emailNormalizado = email.trim().toLowerCase();
-  const error = validarEmail(emailNormalizado) ?? validarContrasena(contrasena);
-  if (error) throw new ErrorAutenticacion('DATOS_INVALIDOS', error);
-  return emailNormalizado;
+function comprobarFormulario(errores: Record<string, string | undefined>) {
+  const mensaje = Object.values(errores).find(Boolean);
+  if (mensaje) throw new ErrorAutenticacion('DATOS_INVALIDOS', mensaje);
+}
+
+async function abrirSesion(datos: SesionApi): Promise<Usuario> {
+  if (!datos || typeof datos.token !== 'string' || !datos.token.trim() || !esUsuarioApi(datos.usuario)) {
+    throw new ErrorAutenticacion('ERROR_INESPERADO', 'La API devolvió una sesión que no pudimos interpretar. Intentá nuevamente.');
+  }
+  const usuario = await prepararUsuario(datos.usuario);
+  await guardarSesion(datos.token, usuario.id);
+  return usuario;
 }
 
 export async function iniciarSesion(datos: DatosInicioSesion): Promise<Usuario> {
-  await esperar();
-  const email = validarCredenciales(datos);
-  const demo = cuentasDemo.find((item) => item.email === email);
-  const credencial = demo ? null : await obtenerCredencial(email);
-  const valida = demo ? datos.contrasena === 'Cercau123' : credencial && await resumen(`${credencial.sal}:${datos.contrasena}`) === credencial.resumen;
-  if (!valida) {
-    throw new ErrorAutenticacion('CREDENCIALES_INVALIDAS', 'El email o la contraseña son incorrectos.');
-  }
-  const usuario = demo
-    ? await obtenerUsuario(demo.id) ?? await guardarUsuario(crearPerfil(demo))
-    : await obtenerUsuario(credencial!.usuarioId);
-  if (!usuario || usuario.email !== email) throw new ErrorAutenticacion('SESION_INVALIDA', 'No encontramos los datos de esta cuenta. Intentá nuevamente.');
-  await guardarSesion(usuario.id);
-  return usuario;
+  comprobarFormulario(validarInicioSesion(datos));
+  const respuesta = await clienteHttp.post<RespuestaUno<SesionApi>>('/auth/ingreso', {
+    email: datos.email.trim().toLowerCase(), contrasena: datos.contrasena,
+  });
+  return abrirSesion(respuesta.data?.datos);
 }
 
 export async function registrarse(datos: DatosRegistro): Promise<Usuario> {
-  await esperar();
-  const email = validarCredenciales(datos);
-  const nombre = datos.nombre.trim();
-  const errorNombre = validarNombre(nombre);
-  if (errorNombre) throw new ErrorAutenticacion('DATOS_INVALIDOS', errorNombre);
-  if (!esRolUsuario(datos.rol)) {
-    throw new ErrorAutenticacion('DATOS_INVALIDOS', 'Seleccioná vecino o comercio para continuar.');
+  comprobarFormulario(validarRegistro({ ...datos, confirmacion: datos.contrasena }));
+  const respuesta = await clienteHttp.post<RespuestaUno<SesionApi>>('/auth/registro', {
+    nombre: datos.nombre.trim(), email: datos.email.trim().toLowerCase(), contrasena: datos.contrasena,
+  });
+  try { return await abrirSesion(respuesta.data?.datos); }
+  catch (error) {
+    if (error instanceof ErrorAutenticacion && error.codigo === 'ALMACENAMIENTO') {
+      throw new ErrorAutenticacion('ALMACENAMIENTO', 'Tu cuenta se creó, pero no pudimos guardar el acceso. Usá Iniciar sesión para continuar.');
+    }
+    throw error;
   }
-  if (cuentasDemo.some((item) => item.email === email) || await obtenerCredencial(email)) {
-    throw new ErrorAutenticacion('EMAIL_REGISTRADO', 'Ya existe una cuenta con ese email. Iniciá sesión.');
-  }
-  const usuario = crearPerfil({ id: `local-${await generarIdentificador()}`, nombre, email, rol: datos.rol, comercioId: null });
-  const sal = await generarIdentificador();
-  // Verificador local para la simulación; la contraseña solo existe durante esta llamada.
-  // En nativo va a SecureStore. Un backend real deberá validar las credenciales en servidor.
-  const credencial: CredencialLocal = { usuarioId: usuario.id, sal, resumen: await resumen(`${sal}:${datos.contrasena}`) };
-  await guardarUsuario(usuario);
-  try {
-    const clave = await claveCredencial(email);
-    if (Platform.OS === 'web') await almacenamientoLocal.setItem(clave, JSON.stringify(credencial));
-    else await escribirSeguro(clave, JSON.stringify(credencial));
-  } catch { throw new ErrorAutenticacion('ALMACENAMIENTO', 'No pudimos guardar tu cuenta. Reintentá el registro.'); }
-  try { await guardarSesion(usuario.id); }
-  catch { throw new ErrorAutenticacion('ALMACENAMIENTO', 'Tu cuenta se creó, pero no pudimos abrir la sesión. Usá Iniciar sesión para continuar.'); }
-  return usuario;
 }
 
 export async function restaurarSesion(): Promise<Usuario | null> {
   const sesion = await recuperarSesion();
   if (!sesion) return null;
-  const usuario = await obtenerUsuario(sesion.usuarioId);
-  if (usuario) return usuario;
-  await eliminarSesion();
-  throw new ErrorAutenticacion('SESION_INVALIDA', 'No encontramos tu perfil guardado. Volvé a iniciar sesión.');
+  const respuesta = await clienteHttp.get<RespuestaUno<UsuarioApi>>('/yo');
+  const datos = respuesta.data?.datos;
+  if (!esUsuarioApi(datos) || datos.id !== sesion.usuarioId) {
+    await invalidarSesion(sesion.token);
+    throw new ErrorAutenticacion('SESION_INVALIDA', 'La sesión guardada no corresponde a esta cuenta. Volvé a ingresar.');
+  }
+  // No restaurar una petición que terminó después de cerrar o cambiar la sesión.
+  if ((await recuperarSesion())?.token !== sesion.token) return null;
+  return prepararUsuario(datos);
 }
 
 export async function cerrarSesion(): Promise<void> {
-  await esperar();
   await eliminarSesion();
 }

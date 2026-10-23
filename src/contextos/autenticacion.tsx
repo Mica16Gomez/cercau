@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useRef, useState, type PropsWithC
 import { AppState } from 'react-native';
 
 import * as servicio from '@/servicios/autenticacion';
+import { suscribirSesionInvalidada } from '@/servicios/almacenamiento-sesion';
 import { solicitarValidacionBiometrica } from '@/servicios/biometria';
 import { actualizarCuenta } from '@/servicios/cuenta';
 import { ErrorAutenticacion, obtenerMensajeError } from '@/servicios/errores-autenticacion';
@@ -37,6 +38,7 @@ export function ProveedorAutenticacion({ children }: PropsWithChildren) {
   const [sesionBloqueada, setSesionBloqueada] = useState(false);
   const operacionEnCurso = useRef(false);
   const usuarioActual = useRef<Usuario | null>(null);
+  const invalidaciones = useRef(0);
 
   function mostrarUsuario(siguiente: Usuario | null) {
     usuarioActual.current = siguiente;
@@ -44,10 +46,20 @@ export function ProveedorAutenticacion({ children }: PropsWithChildren) {
   }
 
   useEffect(() => {
+    return suscribirSesionInvalidada(() => {
+      invalidaciones.current++;
+      mostrarUsuario(null);
+      setSesionBloqueada(false);
+      setErrorRecuperacion('Tu sesión terminó. Volvé a ingresar con correo y contraseña.');
+    });
+  }, []);
+
+  useEffect(() => {
     let activo = true;
+    const version = invalidaciones.current;
     servicio.restaurarSesion()
       .then((sesion) => {
-        if (!activo) return;
+        if (!activo || version !== invalidaciones.current) return;
         setSesionBloqueada(!!sesion?.biometriaActiva);
         mostrarUsuario(sesion?.biometriaActiva ? null : sesion);
         setErrorRecuperacion(null);
@@ -75,8 +87,10 @@ export function ProveedorAutenticacion({ children }: PropsWithChildren) {
     }
     operacionEnCurso.current = true;
     setProcesando(true);
+    const version = invalidaciones.current;
     try {
       const siguienteUsuario = await operacion();
+      if (version !== invalidaciones.current) throw new ErrorAutenticacion('SESION_INVALIDA', 'Tu sesión terminó. Volvé a ingresar.');
       // También protege un guardado que terminó con la app ya en segundo plano.
       const bloquear = !!siguienteUsuario?.biometriaActiva && AppState.currentState === 'background';
       mostrarUsuario(bloquear ? null : siguienteUsuario);
@@ -102,7 +116,7 @@ export function ProveedorAutenticacion({ children }: PropsWithChildren) {
     try { return await actualizarCuenta(anterior, cambios); }
     catch (error) {
       const vencida = error instanceof ErrorAutenticacion && (error.codigo === 'SESION_INVALIDA' || error.codigo === 'SIN_SESION');
-      mostrarUsuario(vencida ? null : anterior);
+      mostrarUsuario(vencida || !usuarioActual.current ? null : anterior);
       if (vencida) { setSesionBloqueada(false); setErrorRecuperacion('Tu sesión terminó. Volvé a ingresar.'); }
       throw error;
     }
@@ -114,7 +128,7 @@ export function ProveedorAutenticacion({ children }: PropsWithChildren) {
       const actual = await servicio.restaurarSesion();
       if (!actual?.biometriaActiva) throw new ErrorAutenticacion('SESION_INVALIDA', 'Volvé a ingresar con correo y contraseña.');
       await solicitarValidacionBiometrica();
-      // Volvemos a comprobar vencimiento tras el diálogo del sistema.
+      // La API vuelve a validar el token tras el diálogo del sistema.
       const verificada = await servicio.restaurarSesion();
       if (verificada?.id !== actual.id) throw new ErrorAutenticacion('SESION_INVALIDA', 'Tu sesión terminó. Ingresá con correo y contraseña.');
       return verificada;

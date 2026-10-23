@@ -59,17 +59,17 @@ Join our community of developers creating universal apps.
 
 Aplicación móvil de directorio de comercios con Expo SDK 57, React Native, TypeScript y Expo Router. La implementación conserva la identidad visual existente y las cuatro pestañas públicas. La documentación anterior de la plantilla se conserva arriba; **no es necesario ejecutar `reset-project`** para trabajar en Cercau.
 
-El módulo permite registrar una cuenta como **vecino** o **comercio**, iniciar sesión, editar el nombre, cerrar sesión con confirmación, administrar favoritos, elegir rubros de interés y activar/desactivar la preferencia de avisos. Los formularios validan cada campo, confirman la contraseña, permiten mostrarla u ocultarla y bloquean envíos simultáneos. El ingreso abre Mi cuenta mediante `replace`. El registro inicia sesión automáticamente y conserva su confirmación visual original en `/cuenta-creada`, también mediante `replace`; desde allí se abre Mi cuenta.
+El módulo permite registrar una cuenta de **vecino** e iniciar sesión con cuentas reales de la API del profesor. Las cuentas de comercio las crea el Centro Comercial. Editar el nombre, administrar favoritos, elegir rubros y activar/desactivar avisos siguen siendo funciones locales en esta etapa. Los formularios validan cada campo, confirman la contraseña, permiten mostrarla u ocultarla y bloquean envíos simultáneos. El ingreso abre Mi cuenta mediante `replace`. El registro inicia sesión automáticamente y conserva su confirmación visual original en `/cuenta-creada`, también mediante `replace`; desde allí se abre Mi cuenta.
 
 El contexto de autenticación es la fuente única del usuario. Expo Router protege `/editar-perfil`, `/favoritos`, `/ajustes-cuenta`, `/mis-resenas` y la confirmación `/cuenta-creada`. Las rutas de registro e ingreso están disponibles sin sesión. Buscar, Promociones, Mapa y la bienvenida de Mi cuenta siguen siendo públicas; tocar un corazón sin cuenta abre el login.
 
-### Persistencia y autenticación simulada
+### Persistencia y autenticación con la API
 
-No hay backend. Los servicios son asíncronos y el token es ficticio: no autoriza llamadas a un servidor. En Android/iOS se genera un token aleatorio de 256 bits, con vencimiento a los 30 días, y se guarda **exclusivamente con `expo-secure-store`**. Cada ingreso genera uno nuevo; el cierre de sesión lo elimina. La restauración muestra carga antes de resolver las rutas.
+Axios centraliza las peticiones a `EXPO_PUBLIC_API_URL`, con un límite de espera de 12 segundos. Ingreso y registro usan `POST /auth/ingreso` y `POST /auth/registro`. En Android/iOS, el token emitido por la API se guarda **exclusivamente con `expo-secure-store`** y se envía como `Authorization: Bearer <token>`. Al iniciar la aplicación se consulta `GET /yo`; la API decide si la sesión sigue siendo válida. Un 401 protegido elimina la sesión y actualiza el contexto. El cierre de sesión elimina el acceso guardado, sin necesitar conexión.
 
-El perfil, los ids de favoritos, los rubros, los avisos y la elección biométrica se guardan por `usuario.id` con `expo-sqlite/kv-store`. Se consultan sin conexión y se conservan después del logout. La contraseña escrita nunca se persiste. Para volver a ingresar en una cuenta local después de reiniciar se conserva un verificador con sal aleatoria en SecureStore; es una simulación local y deberá sustituirse por validación en servidor para producción.
+El perfil, los ids de favoritos, los rubros, los avisos y la elección biométrica se guardan por `usuario.id` con `expo-sqlite/kv-store` y se conservan después del logout. Esas funciones todavía no se sincronizan con la API. La contraseña solo se envía en el formulario: no se guarda ni se calcula un verificador local. Las sesiones ficticias anteriores se descartan y requieren ingresar con una cuenta de la API.
 
-**Web:** SecureStore no está disponible. El token vive solo en memoria, por lo que recargar exige un nuevo login. Los datos de cuenta y el verificador de la simulación se guardan en localStorage; el token nunca se escribe allí. Esta diferencia es intencional. Las cuentas de la versión anterior, que solo guardaba el perfil sin token, deben autenticarse nuevamente.
+**Web:** SecureStore no está disponible. El token vive solo en memoria, por lo que recargar exige un nuevo login. Los datos locales de cuenta se guardan en localStorage; el token y las contraseñas nunca se escriben allí.
 
 ### Biometría y alternativa
 
@@ -77,7 +77,7 @@ Después de iniciar sesión con correo y contraseña, el interruptor de Mi cuent
 
 Face ID requiere una **development build** en iPhone: no funciona en Expo Go. En Android, configurar primero una huella y el bloqueo de pantalla en Ajustes del dispositivo; abrir Cercau, iniciar sesión, activar **Huella digital**, volver a abrir la app y tocar **Ingreso rápido**. Se exige biometría de alta seguridad. Una sesión cerrada o vencida requiere correo y contraseña.
 
-### Ejecución y cuentas de prueba
+### Ejecución
 
 En PowerShell, desde `C:\Users\mica_\Desktop\DesarrolloMovil\cercau`:
 
@@ -86,14 +86,9 @@ npm.cmd install
 npx.cmd expo start
 ```
 
-El primer comando instala lo declarado en el proyecto, sin cambiar de SDK. El segundo inicia Metro; abrir el QR con una versión de Expo Go compatible o usar una development build. Para Android, también se puede presionar `a` con un emulador configurado; `w` abre la versión web.
+El primer comando instala lo declarado en el proyecto, sin cambiar de SDK. Si todavía no existe `.env.local`, copialo desde `.env.example` con `Copy-Item .env.example .env.local` y editá `EXPO_PUBLIC_API_URL` con la dirección de tu API accesible desde el teléfono. No reemplaces una configuración local existente. `.env.local` está ignorado por Git. El segundo comando inicia Metro; abrir el QR con una versión de Expo Go compatible o usar una development build. Para Android, también se puede presionar `a` con un emulador configurado; `w` abre la versión web.
 
-| Cuenta | Correo | Contraseña de prueba |
-| --- | --- | --- |
-| Vecino | `vecino@cercau.test` | `Cercau123` |
-| Comercio | `comercio@cercau.test` | `Cercau123` |
-
-Son datos ficticios públicos de desarrollo. El comercio de prueba conserva la asociación con Panadería La Esquina. Un comercio recién registrado comienza sin asociación; el módulo de gestión comercial deberá establecerla. El perfil permite editar el nombre y conserva correo, rol e identificadores.
+Creá una cuenta de vecino en el formulario o usá una cuenta existente de la API. Cercau ya no tiene cuentas demo propias. El perfil permite editar localmente el nombre y conserva correo, rol e identificadores recibidos del servidor.
 
 ### Integraciones con otros módulos
 
@@ -114,4 +109,4 @@ git diff --check
 
 TypeScript revisa los tipos; lint revisa las reglas del código; Expo Doctor comprueba configuración y dependencias; las pruebas usan Node y sustitutos de los módulos nativos, sin agregar un framework. No sustituyen una prueba de SecureStore, teclado o huella en un dispositivo físico.
 
-Ver [guía de cierre del módulo](docs/cierre-modulo-cuenta.md) para la arquitectura, el informe de cambios y los pasos manuales completos. La documentación de etapas anteriores en `docs/autenticacion.md` se conserva como historial.
+Ver [autenticación con la API](docs/autenticacion-api.md) para las decisiones y las pruebas manuales actuales. Los documentos `docs/cierre-modulo-cuenta.md` y `docs/autenticacion.md` se conservan como historial de etapas anteriores.

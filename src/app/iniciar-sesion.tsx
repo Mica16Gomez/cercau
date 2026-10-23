@@ -59,7 +59,7 @@ export default function IniciarSesionScreen() {
           icono={{ ios: 'lock', android: 'lock_outline', web: 'lock_outline' }}
           error={tocados.contrasena ? errores.contrasena : undefined} onBlur={() => setTocados((actual) => ({ ...actual, contrasena: true }))}
           esContrasena autoCapitalize="none" autoCorrect={false} autoComplete="current-password"
-          textContentType="password" maxLength={128} editable={!cargando} returnKeyType="go"
+          textContentType="password" maxLength={100} editable={!cargando} returnKeyType="go"
           onSubmitEditing={ingresar}
         />
         <MensajeError mensaje={error} />

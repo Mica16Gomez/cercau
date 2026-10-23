@@ -1,15 +1,21 @@
 import * as SecureStore from 'expo-secure-store';
-import { getRandomBytesAsync } from 'expo-crypto';
 import { Platform } from 'react-native';
 
 import { ErrorAutenticacion } from './errores-autenticacion';
 
 import type { SesionGuardada } from '@/tipos/usuario';
 
-const CLAVE_SESION = 'cercau.sesion.v2';
-const CLAVE_ANTERIOR = 'cercau.sesion.v1';
+const CLAVE_SESION = 'cercau.sesion.v3';
+const CLAVES_ANTERIORES = ['cercau.sesion.v1', 'cercau.sesion.v2'];
 // SecureStore no existe en web. No hay alternativa persistente para el token.
 const memoriaWeb = new Map<string, string>();
+const oyentes = new Set<() => void>();
+let sesionInvalidada = false;
+
+export function suscribirSesionInvalidada(oyente: () => void): () => void {
+  oyentes.add(oyente);
+  return () => { oyentes.delete(oyente); };
+}
 
 export async function leerSeguro(clave: string): Promise<string | null> {
   try {
@@ -37,40 +43,44 @@ export async function borrarSeguro(clave: string): Promise<void> {
   }
 }
 
-export async function generarIdentificador(): Promise<string> {
-  const bytes = await getRandomBytesAsync(32);
-  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
-}
-
-export async function guardarSesion(usuarioId: string): Promise<void> {
-  const sesion: SesionGuardada = {
-    version: 2, token: await generarIdentificador(), usuarioId,
-    venceEn: Date.now() + 30 * 24 * 60 * 60 * 1000,
-  };
+export async function guardarSesion(token: string, usuarioId: string): Promise<void> {
+  const sesion: SesionGuardada = { version: 3, token, usuarioId };
   await escribirSeguro(CLAVE_SESION, JSON.stringify(sesion));
+  sesionInvalidada = false;
 }
 
 export async function eliminarSesion(): Promise<void> {
   // Borrar una sesión nunca elimina el perfil, sus preferencias ni sus favoritos.
-  await borrarSeguro(CLAVE_ANTERIOR);
+  for (const clave of CLAVES_ANTERIORES) await borrarSeguro(clave);
   await borrarSeguro(CLAVE_SESION);
 }
 
+export async function invalidarSesion(token: string): Promise<void> {
+  const actual = await recuperarSesion();
+  // Un 401 de una petición anterior no debe cerrar una sesión recién iniciada.
+  if (actual?.token !== token) return;
+  sesionInvalidada = true;
+  try { await eliminarSesion(); }
+  finally { oyentes.forEach((oyente) => oyente()); }
+}
+
 export async function recuperarSesion(): Promise<SesionGuardada | null> {
+  if (sesionInvalidada) return null;
   const contenido = await leerSeguro(CLAVE_SESION);
-  if (Platform.OS === 'web') window.localStorage.removeItem(CLAVE_ANTERIOR);
-  // El perfil de la etapa anterior no contenía token: requiere un nuevo login.
-  if (await leerSeguro(CLAVE_ANTERIOR)) await borrarSeguro(CLAVE_ANTERIOR);
+  // Las sesiones simuladas nunca se usan como credenciales de la API.
+  for (const clave of CLAVES_ANTERIORES) {
+    if (Platform.OS === 'web') window.localStorage.removeItem(clave);
+    if (await leerSeguro(clave)) await borrarSeguro(clave);
+  }
   if (contenido === null) return null;
 
   try {
     const sesion: unknown = JSON.parse(contenido);
     if (
       typeof sesion === 'object' && sesion !== null &&
-      'version' in sesion && sesion.version === 2 &&
-      'token' in sesion && typeof sesion.token === 'string' && /^[a-f0-9]{64}$/.test(sesion.token) &&
-      'usuarioId' in sesion && typeof sesion.usuarioId === 'string' && sesion.usuarioId.length > 0 &&
-      'venceEn' in sesion && typeof sesion.venceEn === 'number' && Number.isFinite(sesion.venceEn) && sesion.venceEn > Date.now()
+      'version' in sesion && sesion.version === 3 &&
+      'token' in sesion && typeof sesion.token === 'string' && sesion.token.trim().length > 0 &&
+      'usuarioId' in sesion && typeof sesion.usuarioId === 'string' && sesion.usuarioId.length > 0
     ) {
       return sesion as SesionGuardada;
     }

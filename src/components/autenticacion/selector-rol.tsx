@@ -7,10 +7,10 @@ import type { RolUsuario } from '@/tipos/usuario';
 
 const opciones = [
   { rol: 'vecino', titulo: 'Soy vecino', breve: 'Busco comercios', descripcion: 'Descubrí los comercios de tu barrio y encontrá lo que necesitás cerca tuyo.', icono: { ios: 'person.2', android: 'people', web: 'people' } },
-  { rol: 'comercio', titulo: 'Tengo un comercio', breve: 'Soy parte del comercio local', descripcion: 'Sumate con la identidad de tu comercio y formá parte de la comunidad local.', icono: { ios: 'storefront', android: 'storefront', web: 'storefront' } },
+  { rol: 'comercio', titulo: 'Tengo un comercio', breve: 'Alta por el Centro Comercial', descripcion: 'Las cuentas de comercio las crea el Centro Comercial. Si ya tenés una, iniciá sesión.', icono: { ios: 'storefront', android: 'storefront', web: 'storefront' } },
 ] as const;
 
-type Props = { valor: RolUsuario | null; onChange: (rol: RolUsuario) => void; compacto?: boolean; deshabilitado?: boolean; error?: string };
+type Props = { valor: RolUsuario | null; onChange?: (rol: RolUsuario) => void; compacto?: boolean; deshabilitado?: boolean; error?: string };
 
 export function SelectorRol({ valor, onChange, compacto = false, deshabilitado = false, error }: Props) {
   const tema = useTheme();
@@ -20,15 +20,16 @@ export function SelectorRol({ valor, onChange, compacto = false, deshabilitado =
         {opciones.map((opcion) => {
           const seleccionado = valor === opcion.rol;
           const esComercio = opcion.rol === 'comercio';
+          const bloqueado = deshabilitado || esComercio;
           return (
             <Pressable key={opcion.rol} accessibilityRole="radio"
               accessibilityLabel={`${opcion.titulo}. ${compacto ? opcion.breve : opcion.descripcion}`}
-              accessibilityState={{ checked: seleccionado, disabled: deshabilitado }}
-              disabled={deshabilitado} onPress={() => onChange(opcion.rol)}
+              accessibilityState={{ checked: seleccionado, disabled: bloqueado }}
+              disabled={bloqueado} onPress={() => onChange?.(opcion.rol)}
               style={({ pressed }) => [estilos.opcion, compacto && estilos.compacta, {
                 backgroundColor: seleccionado ? tema.primarySoft : tema.backgroundElement,
                 borderColor: seleccionado ? tema.primary : tema.border,
-              }, (pressed || deshabilitado) && estilos.presionado]}>
+              }, (pressed || bloqueado) && estilos.presionado]}>
               <View style={estilos.encabezado}>
                 <View style={[estilos.icono, compacto && estilos.iconoCompacto, { backgroundColor: esComercio ? tema.terracottaSoft : tema.primarySoft }]}>
                   <SymbolView name={opcion.icono} size={compacto ? 23 : 30} tintColor={esComercio ? tema.terracotta : tema.primary} />
