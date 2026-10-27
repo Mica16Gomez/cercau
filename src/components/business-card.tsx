@@ -1,4 +1,4 @@
-import { Image } from 'expo-image';
+import { Image, type ImageSource } from 'expo-image';
 import { SymbolView } from 'expo-symbols';
 import { Pressable, StyleSheet, View } from 'react-native';
 
@@ -12,15 +12,26 @@ type BusinessCardProps = {
   isFavorite: boolean;
   onToggleFavorite: () => void;
   deshabilitado?: boolean;
+  formatoBuscar?: boolean;
 };
 
-export function BusinessCard({ business, isFavorite, onToggleFavorite, deshabilitado = false }: BusinessCardProps) {
+// Recursos ilustrativos por rubro; nunca vinculan identidades de comercios.
+const imagenesPorRubro: Record<string, ImageSource> = {
+  gastronomia: require('../../assets/images/comercios/cafe.jpg'),
+  'salud y farmacia': require('../../assets/images/comercios/farmacia.jpg'),
+  hogar: require('../../assets/images/comercios/flores.jpg'),
+};
+const ilustracionBarrio = require('../../assets/images/referencia/barrio-buscar.svg');
+
+export function BusinessCard({ business, isFavorite, onToggleFavorite, deshabilitado = false, formatoBuscar = false }: BusinessCardProps) {
   const theme = useTheme();
+  const rubroVisual = business.category.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+  const imagen = business.imagen ?? (formatoBuscar ? imagenesPorRubro[rubroVisual] ?? ilustracionBarrio : undefined);
 
   return (
     <View style={[styles.card, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
       <View style={styles.photoContainer}>
-        {business.imagen ? <Image source={business.imagen} style={styles.photo} contentFit="cover" accessibilityLabel={`Fotografía ilustrativa de ${business.category.toLowerCase()}`} /> :
+        {imagen ? <Image source={imagen} style={styles.photo} contentFit="cover" accessibilityLabel={formatoBuscar ? `Imagen ilustrativa del rubro ${business.category.toLowerCase()}` : `Fotografía ilustrativa de ${business.category.toLowerCase()}`} /> :
           <IlustracionComercio categoria={business.category} iniciales={business.initials} />}
         <Pressable
           accessibilityRole="button"
@@ -37,14 +48,17 @@ export function BusinessCard({ business, isFavorite, onToggleFavorite, deshabili
       </View>
       <View style={styles.heading}>
         <View style={styles.identity}>
-          <ThemedText style={styles.name}>{business.name}</ThemedText>
+          <ThemedText style={styles.name} numberOfLines={formatoBuscar ? 2 : undefined} ellipsizeMode="tail">{business.name}</ThemedText>
           <View style={styles.details}>
             <View style={styles.detail} accessibilityLabel={`Calificación: ${business.rating} de 5`} accessible>
               <SymbolView name={{ ios: 'star.fill', android: 'star', web: 'star' }} tintColor={theme.star} size={13} />
               <ThemedText type="smallBold" style={styles.metadata}>{business.rating}</ThemedText>
             </View>
           </View>
-          <ThemedText type="small" themeColor="textSecondary" style={styles.category}>{business.category} · {business.distance}</ThemedText>
+          {formatoBuscar ? <>
+            <ThemedText type="small" themeColor="textSecondary" style={styles.category} numberOfLines={1} ellipsizeMode="tail">{business.category}</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary" style={styles.category} numberOfLines={2} ellipsizeMode="tail">{business.distance}</ThemedText>
+          </> : <ThemedText type="small" themeColor="textSecondary" style={styles.category}>{business.category} · {business.distance}</ThemedText>}
             <View style={[
               styles.status,
               { backgroundColor: business.isOpen ? theme.openBackground : theme.closedBackground },

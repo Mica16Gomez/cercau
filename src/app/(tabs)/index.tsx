@@ -12,25 +12,16 @@ import { useAutenticacion } from '@/contextos/autenticacion';
 import { useConsulta } from '@/hooks/use-consulta';
 import { useFavoritos } from '@/hooks/use-favoritos';
 import { buscarComercios, obtenerCategorias } from '@/servicios/comercios';
-import type { CategoriaBusqueda } from '@/tipos/comercio';
 import { useTheme } from '@/hooks/use-theme';
-
-const categoryIcons = {
-  Todos: { ios: 'bag', android: 'shopping_bag', web: 'shopping_bag' },
-  Comida: { ios: 'fork.knife', android: 'restaurant', web: 'restaurant' },
-  Servicios: { ios: 'wrench.and.screwdriver', android: 'handyman', web: 'handyman' },
-  Salud: { ios: 'heart', android: 'ecg_heart', web: 'ecg_heart' },
-} as const;
 
 export default function SearchScreen() {
   const theme = useTheme();
   const { width, fontScale } = useWindowDimensions();
   const contentWidth = Math.min(width, 560) - 32;
   const cardWidth = fontScale > 1.3 ? Math.min(contentWidth, 220) : Math.round((contentWidth - 20) / 2.4);
-  const categoryWidth = Math.max(fontScale > 1.3 ? 96 : 66, (contentWidth - 24) / 4);
   const { usuario } = useAutenticacion();
   const [query, setQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<CategoriaBusqueda>('Todos');
+  const [selectedCategory, setSelectedCategory] = useState('');
   const categorias = useConsulta(useCallback(() => obtenerCategorias(), []));
   const comercios = useConsulta(useCallback(() => buscarComercios(query, selectedCategory), [query, selectedCategory]));
   const { favoritos: favoriteIds, alternar, cargando, error, reintentar } = useFavoritos();
@@ -38,7 +29,7 @@ export default function SearchScreen() {
 
   function clearFilters() {
     setQuery('');
-    setSelectedCategory('Todos');
+    setSelectedCategory('');
   }
 
   return (
@@ -71,7 +62,7 @@ export default function SearchScreen() {
             contentInsetAdjustmentBehavior="never"
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={styles.categories}>
-            {(categorias.datos ?? []).map((category) => <CategoryChip key={category} ancho={categoryWidth} titulo={category} icono={categoryIcons[category]} seleccionado={category === selectedCategory} onPress={() => setSelectedCategory(category)} />)}
+            {(categorias.datos ?? []).map((category) => <CategoryChip key={category.id} compacto titulo={category.nombre} seleccionado={category.id === selectedCategory} onPress={() => setSelectedCategory(category.id)} />)}
           </ScrollView>
         </View>
 
@@ -88,6 +79,7 @@ export default function SearchScreen() {
               <View key={business.id} style={{ width: cardWidth }}>
                 <BusinessCard
                   business={business}
+                  formatoBuscar
                   isFavorite={favoriteIds.includes(business.id)}
                   onToggleFavorite={() => void alternar(business.id)}
                   deshabilitado={cargando}
