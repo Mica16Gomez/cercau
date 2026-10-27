@@ -10,11 +10,21 @@ const axios = require('axios');
 // Cada disco conserva el mismo servidor entre reinicios del entorno de prueba.
 const servidores = new WeakMap();
 function crearServidor() {
+  const perfil = (usuario) => ({ ...usuario, favoritos: [], rubrosDeInteres: [], avisosActivos: true });
   return {
     usuarios: new Map([
-      ['vecino@api.test', { id: 'usr-vecino', nombre: 'Vecino API', email: 'vecino@api.test', rol: 'vecino', comercioId: null }],
-      ['comercio@api.test', { id: 'usr-comercio', nombre: 'Comercio API', email: 'comercio@api.test', rol: 'comercio', comercioId: 'panaderia-la-esquina' }],
+      ['vecino@api.test', perfil({ id: 'usr-vecino', nombre: 'Vecino API', email: 'vecino@api.test', rol: 'vecino', comercioId: null })],
+      ['comercio@api.test', perfil({ id: 'usr-comercio', nombre: 'Comercio API', email: 'comercio@api.test', rol: 'comercio', comercioId: 'com-panaderia' })],
     ]), tokens: new Map(), secuencia: 0,
+    rubros: [
+      { id: 'rub-gastronomia', nombre: 'Gastronomía', icono: 'restaurant', color: '#D9534F', orden: 1 },
+      { id: 'rub-otros', nombre: 'Otros', icono: 'ellipsis-horizontal', color: '#7A8691', orden: 2 },
+    ],
+    comercios: [
+      { id: 'com-cafe', nombre: 'Café API', rubroId: 'rub-gastronomia', direccion: 'Calle 123', puntaje: 4.8, activo: true, horarios: [{ dia: 1, abre: '08:00', cierra: '12:00' }] },
+      { id: 'com-floreria', nombre: 'Florería API', rubroId: 'rub-otros', direccion: 'Calle 456', puntaje: 0, activo: true, horarios: [] },
+      { id: 'com-baja', nombre: 'Comercio dado de baja', rubroId: 'rub-otros', direccion: 'Calle 789', puntaje: 3, activo: false, horarios: [] },
+    ],
   };
 }
 
@@ -29,6 +39,29 @@ function crearEntorno(plataforma = 'ios', disco = new Map(), discoLocal = new Ma
   if (!servidores.has(discoLocal)) servidores.set(discoLocal, crearServidor());
   const servidor = servidores.get(discoLocal);
   const http = { solicitudes: [], fallo: null, respuesta: null, pausa: null };
+  // Permite probar el contexto real sin instalar un renderer ni ejecutar módulos nativos.
+  const hooks = { valores: [], indice: 0, efectos: [] };
+  const react = {
+    createContext: () => ({ Provider: 'Provider' }),
+    useContext: () => { throw new Error('No se usa fuera del proveedor en estas pruebas.'); },
+    useState(inicial) {
+      const indice = hooks.indice++;
+      if (!(indice in hooks.valores)) hooks.valores[indice] = typeof inicial === 'function' ? inicial() : inicial;
+      return [hooks.valores[indice], (valor) => { hooks.valores[indice] = typeof valor === 'function' ? valor(hooks.valores[indice]) : valor; }];
+    },
+    useRef(inicial) {
+      const indice = hooks.indice++;
+      if (!(indice in hooks.valores)) hooks.valores[indice] = { current: inicial };
+      return hooks.valores[indice];
+    },
+    useEffect(efecto, dependencias) {
+      const indice = hooks.indice++;
+      const anterior = hooks.valores[indice];
+      if (!anterior || dependencias.some((valor, i) => valor !== anterior.dependencias[i])) {
+        hooks.efectos.push(() => { anterior?.limpiar?.(); hooks.valores[indice] = { dependencias, limpiar: efecto() }; });
+      }
+    },
+  };
 
   async function adapter(config) {
     http.solicitudes.push(config);
@@ -37,27 +70,60 @@ function crearEntorno(plataforma = 'ios', disco = new Map(), discoLocal = new Ma
     const responder = (status, data) => {
       const response = { status, data, config, headers: {}, statusText: String(status) };
       if (status >= 400) throw new axios.AxiosError('Respuesta de prueba', 'ERR_BAD_RESPONSE', config, {}, response);
-      return response;
+      return { ...response, data: data === undefined ? undefined : JSON.parse(JSON.stringify(data)) };
     };
     if (http.respuesta) return responder(http.respuesta.status, http.respuesta.data);
     const cuerpo = config.data ? JSON.parse(config.data) : {};
+    const listar = (datos) => {
+      const pagina = config.params?.pagina ?? 1;
+      const porPagina = config.params?.porPagina ?? 20;
+      return responder(200, { datos: datos.slice((pagina - 1) * porPagina, pagina * porPagina), meta: { total: datos.length, pagina, porPagina } });
+    };
+    if (config.url === '/rubros') return listar(servidor.rubros);
+    if (config.url === '/comercios') {
+      const normalizar = (texto) => texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+      return listar(servidor.comercios.filter((c) => c.activo && (!config.params?.rubroId || c.rubroId === config.params.rubroId) &&
+        (!config.params?.q || normalizar(c.nombre).includes(normalizar(config.params.q)))));
+    }
+    if (config.url.startsWith('/comercios/')) {
+      const comercio = servidor.comercios.find((c) => c.id === decodeURIComponent(config.url.slice('/comercios/'.length)));
+      return comercio ? responder(200, { datos: comercio, meta: null }) : responder(404, { error: { codigo: 'COMERCIO_NO_ENCONTRADO', mensaje: 'No existe ese comercio.' } });
+    }
+    if (config.url.startsWith('/yo/favoritos/')) {
+      const usuario = servidor.tokens.get(config.headers.get('Authorization')?.slice(7));
+      if (!usuario) return responder(401, { error: { codigo: 'NO_AUTENTICADO', mensaje: 'Sesión inválida' } });
+      if (usuario.rol !== 'vecino') return responder(403, { error: { codigo: 'SIN_PERMISO', mensaje: 'Sólo vecinos.' } });
+      const id = decodeURIComponent(config.url.slice('/yo/favoritos/'.length));
+      if (config.method === 'delete') {
+        usuario.favoritos = usuario.favoritos.filter((favorito) => favorito !== id);
+        return responder(204, undefined);
+      }
+      if (!servidor.comercios.some((c) => c.id === id)) return responder(404, { error: { codigo: 'COMERCIO_NO_ENCONTRADO', mensaje: 'No existe ese comercio.' } });
+      usuario.favoritos = [...new Set([...usuario.favoritos, id])];
+      return responder(200, { datos: usuario, meta: null });
+    }
     if (config.url === '/yo') {
       const usuario = servidor.tokens.get(config.headers.get('Authorization')?.slice(7));
+      if (usuario && config.method === 'patch') {
+        if (cuerpo.rubrosDeInteres?.some((id) => !servidor.rubros.some((r) => r.id === id))) {
+          return responder(422, { error: { codigo: 'RUBRO_NO_ENCONTRADO', mensaje: 'No existe el rubro.' } });
+        }
+        for (const campo of ['nombre', 'rubrosDeInteres', 'avisosActivos']) if (campo in cuerpo) usuario[campo] = cuerpo[campo];
+      }
       return usuario ? responder(200, { datos: usuario, meta: null })
         : responder(401, { error: { codigo: 'NO_AUTENTICADO', mensaje: 'Sesión inválida' } });
     }
     if (config.url === '/auth/registro') {
       if (servidor.usuarios.has(cuerpo.email)) return responder(409, { error: { codigo: 'EMAIL_YA_REGISTRADO', mensaje: 'Ya registrado' } });
-      servidor.usuarios.set(cuerpo.email, { id: `usr-${++servidor.secuencia}`, nombre: cuerpo.nombre, email: cuerpo.email, rol: 'vecino', comercioId: null });
+      servidor.usuarios.set(cuerpo.email, { id: `usr-${++servidor.secuencia}`, nombre: cuerpo.nombre, email: cuerpo.email, rol: 'vecino', comercioId: null, favoritos: [], rubrosDeInteres: [], avisosActivos: true });
     }
     const usuario = servidor.usuarios.get(cuerpo.email);
     if (!usuario || ['Incorrecta1', 'OtraClave123'].includes(cuerpo.contrasena)) {
       return responder(401, { error: { codigo: 'CREDENCIALES_INVALIDAS', mensaje: 'Credenciales inválidas' } });
     }
-    const completo = { ...usuario, favoritos: [], rubrosDeInteres: [], avisosActivos: true };
     const token = `token-api-${++servidor.secuencia}`;
-    servidor.tokens.set(token, completo);
-    return responder(config.url === '/auth/registro' ? 201 : 200, { datos: { token, usuario: completo }, meta: null });
+    servidor.tokens.set(token, usuario);
+    return responder(config.url === '/auth/registro' ? 201 : 200, { datos: { token, usuario }, meta: null });
   }
   const almacenamiento = {
     getItem(clave) {
@@ -88,7 +154,7 @@ function crearEntorno(plataforma = 'ios', disco = new Map(), discoLocal = new Ma
     const modulo = { exports: {} };
     cache.set(ruta, modulo);
     const codigo = ts.transpileModule(fs.readFileSync(ruta, 'utf8'), {
-      compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+      compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
     }).outputText;
     vm.runInNewContext(codigo, {
       exports: modulo.exports,
@@ -100,7 +166,9 @@ function crearEntorno(plataforma = 'ios', disco = new Map(), discoLocal = new Ma
         if (nombre === 'axios') return { __esModule: true,
           create: (config) => axios.create({ ...config, adapter }), isAxiosError: axios.isAxiosError,
         };
-        if (nombre === 'react-native') return { Platform: { OS: plataforma } };
+        if (nombre === 'react') return react;
+        if (nombre === 'react/jsx-runtime') return { jsx: (tipo, props) => ({ tipo, props }) };
+        if (nombre === 'react-native') return { Platform: { OS: plataforma }, AppState: { currentState: 'active', addEventListener: () => ({ remove() {} }) } };
         if (/\.(jpg|png)$/.test(nombre)) return nombre;
         if (nombre === 'expo-sqlite/kv-store') return { __esModule: true, default: local };
         if (nombre === 'expo-constants') return { __esModule: true, default: { get executionEnvironment() { return biometriaNativa.expoGo ? 'storeClient' : 'standalone'; } }, ExecutionEnvironment: { StoreClient: 'storeClient' } };
@@ -129,7 +197,7 @@ function crearEntorno(plataforma = 'ios', disco = new Map(), discoLocal = new Ma
         const destino = nombre.startsWith('@/')
           ? path.join('src', nombre.slice(2))
           : path.relative(path.resolve(__dirname, '..'), path.resolve(path.dirname(ruta), nombre));
-        return cargar(`${destino}.ts`);
+        return cargar(fs.existsSync(`${destino}.ts`) ? `${destino}.ts` : `${destino}.tsx`);
       },
     }, { filename: ruta });
     return modulo.exports;
@@ -147,6 +215,19 @@ function crearEntorno(plataforma = 'ios', disco = new Map(), discoLocal = new Ma
     biometria: cargar('src/servicios/biometria.ts'),
     comercios: cargar('src/servicios/comercios.ts'),
     actividad: cargar('src/servicios/actividad.ts'),
+    adaptar: cargar('src/servicios/adaptar-comercio.ts'),
+    async montarContexto() {
+      const proveedor = cargar('src/contextos/autenticacion.tsx');
+      function actual() {
+        hooks.indice = 0;
+        const elemento = proveedor.ProveedorAutenticacion({ children: null });
+        hooks.efectos.splice(0).forEach((efecto) => efecto());
+        return elemento.props.value;
+      }
+      actual();
+      await new Promise(setImmediate);
+      return { actual };
+    },
   };
 }
 
@@ -285,27 +366,30 @@ test('una cuenta registrada puede volver a ingresar después de logout y reinici
   }
 });
 
-test('favoritos, rubros, avisos y nombre persisten por usuario sin duplicados', async () => {
+test('favoritos, rubros, avisos y nombre persisten en la API por usuario sin duplicados', async () => {
   const app = crearEntorno();
   let ana = await app.servicio.registrarse(datos);
   ana = await app.cuenta.actualizarCuenta(ana, {
-    favoritos: ['cafe-la-esquina', 'cafe-la-esquina'], rubrosDeInteres: ['Comida', 'Comida'], avisosActivos: true, nombre: 'Ana editada',
+    rubrosDeInteres: ['rub-gastronomia', 'rub-gastronomia'], avisosActivos: true, nombre: 'Ana editada',
   });
+  ana = await app.cuenta.cambiarFavorito(ana, 'com-cafe', true);
+  ana = await app.cuenta.cambiarFavorito(ana, 'com-cafe', true);
   assert.equal(ana.favoritos.length, 1);
   assert.equal(ana.rubrosDeInteres.length, 1);
   const comercios = await app.comercios.obtenerComerciosPorIds(ana.favoritos);
-  assert.equal(comercios[0].name, 'Café La Esquina');
-  assert.ok(comercios[0].imagen);
+  assert.equal(comercios[0].name, 'Café API');
+  assert.equal(comercios[0].distance, 'Calle 123');
   await app.servicio.cerrarSesion();
   let otro = await app.servicio.iniciarSesion(credencialesApi);
   assert.equal(otro.favoritos.length, 0);
   assert.equal(otro.rubrosDeInteres.length, 0);
-  assert.equal(otro.avisosActivos, false);
-  otro = await app.cuenta.actualizarCuenta(otro, { favoritos: ['floreria-verde'] });
+  assert.equal(otro.avisosActivos, true);
+  otro = await app.cuenta.cambiarFavorito(otro, 'com-floreria', true);
   const reinicio = crearEntorno('ios', app.disco, app.discoLocal);
   const recuperada = await reinicio.servicio.iniciarSesion(datos);
-  assert.equal(JSON.stringify(recuperada), JSON.stringify(ana));
-  const sinFavoritos = await reinicio.cuenta.actualizarCuenta(recuperada, { favoritos: [], rubrosDeInteres: [], avisosActivos: false });
+  assert.deepEqual(JSON.parse(JSON.stringify(recuperada)), JSON.parse(JSON.stringify(ana)));
+  const quitado = await reinicio.cuenta.cambiarFavorito(recuperada, 'com-cafe', false);
+  const sinFavoritos = await reinicio.cuenta.actualizarCuenta(quitado, { rubrosDeInteres: [], avisosActivos: false });
   assert.equal(sinFavoritos.favoritos.length, 0);
   assert.equal(sinFavoritos.rubrosDeInteres.length, 0);
   assert.equal((await reinicio.servicio.iniciarSesion(credencialesApi)).favoritos[0], otro.favoritos[0]);
@@ -314,10 +398,11 @@ test('favoritos, rubros, avisos y nombre persisten por usuario sin duplicados', 
 test('editar perfil conserva identificadores, rol, correo y relación con comercio', async () => {
   const app = crearEntorno();
   const comercio = await app.servicio.iniciarSesion({ email: 'comercio@api.test', contrasena: 'Prueba123' });
-  assert.equal(comercio.comercioId, 'panaderia-la-esquina');
+  assert.equal(comercio.comercioId, 'com-panaderia');
   const cambiado = await app.cuenta.actualizarCuenta(comercio, { nombre: '  Almacén Ana  ', rol: 'vecino', email: 'otro@test.com', comercioId: null });
   assert.equal(cambiado.nombre, 'Almacén Ana');
   for (const campo of ['id', 'rol', 'email', 'comercioId']) assert.equal(cambiado[campo], comercio[campo]);
+  assert.deepEqual(JSON.parse(app.http.solicitudes.at(-1).data), { nombre: 'Almacén Ana' });
   await assert.rejects(app.cuenta.actualizarCuenta(cambiado, { nombre: ' ' }), { codigo: 'DATOS_INVALIDOS' });
 });
 
@@ -325,35 +410,39 @@ test('un usuario sin sesión o con otra cuenta activa no puede guardar cambios p
   const app = crearEntorno();
   const ana = await app.servicio.registrarse(datos);
   await app.servicio.cerrarSesion();
-  await assert.rejects(app.cuenta.actualizarCuenta(ana, { favoritos: ['cafe-la-esquina'] }), { codigo: 'SIN_SESION' });
+  await assert.rejects(app.cuenta.cambiarFavorito(ana, 'com-cafe', true), { codigo: 'SIN_SESION' });
   await app.servicio.iniciarSesion(credencialesApi);
   await assert.rejects(app.cuenta.actualizarCuenta(ana, { avisosActivos: true }), { codigo: 'SIN_SESION' });
   await assert.rejects(app.actividad.obtenerMisResenas(ana.id), { codigo: 'SIN_SESION' });
 });
 
-test('fallos de persistencia no sobrescriben favoritos ni preferencias anteriores', async () => {
+test('fallos locales no deshacen un PATCH confirmado; la biometría conserva su valor ante error', async () => {
   const app = crearEntorno();
   const usuario = await app.servicio.iniciarSesion(credencialesApi);
   app.fallos.localEscritura = true;
-  await assert.rejects(app.cuenta.actualizarCuenta(usuario, { favoritos: ['cafe-la-esquina'], avisosActivos: true }), { codigo: 'ALMACENAMIENTO' });
+  const actualizado = await app.cuenta.actualizarCuenta(usuario, { avisosActivos: false });
+  assert.equal(actualizado.avisosActivos, false);
+  await assert.rejects(app.cuenta.actualizarCuenta(actualizado, { biometriaActiva: true }), { codigo: 'ALMACENAMIENTO' });
   app.fallos.localEscritura = false;
   const recuperado = await app.cuenta.obtenerUsuario(usuario.id);
   assert.equal(recuperado.favoritos.length, 0);
-  assert.equal(recuperado.avisosActivos, false);
+  assert.equal(recuperado.avisosActivos, true);
+  assert.equal(recuperado.biometriaActiva, false);
   app.fallos.localLectura = true;
   await assert.rejects(app.servicio.restaurarSesion(), { codigo: 'ALMACENAMIENTO' });
   app.fallos.localLectura = false;
-  assert.equal((await app.servicio.restaurarSesion()).id, usuario.id);
+  assert.equal((await app.servicio.restaurarSesion()).avisosActivos, false);
 });
 
 test('rechaza ids de comercios y rubros inexistentes; no duplica objetos de comercio', async () => {
   const app = crearEntorno();
   const usuario = await app.servicio.iniciarSesion(credencialesApi);
-  await assert.rejects(app.cuenta.actualizarCuenta(usuario, { favoritos: ['inventado'] }), { codigo: 'DATOS_INVALIDOS' });
+  await assert.rejects(app.cuenta.cambiarFavorito(usuario, 'inventado', true), { codigo: 'DATOS_INVALIDOS' });
+  await assert.rejects(app.cuenta.cambiarFavorito(usuario, 'com-inexistente', true), { codigo: 'COMERCIO_NO_ENCONTRADO' });
   await assert.rejects(app.cuenta.actualizarCuenta(usuario, { rubrosDeInteres: ['inventado'] }), { codigo: 'DATOS_INVALIDOS' });
-  const porIds = await app.comercios.obtenerComerciosPorIds(['cafe-la-esquina', 'cafe-la-esquina']);
+  const porIds = await app.comercios.obtenerComerciosPorIds(['com-cafe', 'com-cafe']);
   assert.equal(porIds.length, 1);
-  assert.equal((await app.comercios.buscarComercios('CAFE', 'Todos'))[0].id, 'cafe-la-esquina');
+  assert.equal((await app.comercios.buscarComercios('CAFE', ''))[0].id, 'com-cafe');
 });
 
 test('cada login guarda el token recibido y un 401 elimina la sesión vencida', async () => {
@@ -612,4 +701,246 @@ test('una respuesta de GET /yo que termina después del logout no restaura la cu
   liberar();
   assert.equal(await restauracion, null);
   assert.equal(await app.sesion.recuperarSesion(), null);
+});
+
+test('GET /yo prevalece sobre un perfil, favoritos y preferencias locales antiguos', async () => {
+  const app = crearEntorno();
+  const usuario = await app.servicio.iniciarSesion(credencialesApi);
+  await app.cuenta.guardarUsuario({ ...usuario, nombre: 'Nombre local antiguo', favoritos: ['ficticio'], rubrosDeInteres: ['Comida'], avisosActivos: false, biometriaActiva: true });
+  const remoto = app.servidor.usuarios.get(credencialesApi.email);
+  Object.assign(remoto, { nombre: 'Nombre remoto', favoritos: ['com-cafe'], rubrosDeInteres: ['rub-otros'], avisosActivos: true });
+  const restaurado = await app.servicio.restaurarSesion();
+  for (const campo of ['nombre', 'favoritos', 'rubrosDeInteres', 'avisosActivos']) assert.equal(JSON.stringify(restaurado[campo]), JSON.stringify(remoto[campo]));
+  assert.equal(restaurado.biometriaActiva, true);
+});
+
+test('PATCH /yo envía sólo los campos del DTO y conserva la biometría del dispositivo', async () => {
+  const app = crearEntorno();
+  let usuario = await app.servicio.iniciarSesion(credencialesApi);
+  usuario = await app.cuenta.actualizarCuenta(usuario, { biometriaActiva: true });
+  const antes = app.http.solicitudes.length;
+  const cambiado = await app.cuenta.actualizarCuenta(usuario, { nombre: '  Nombre nuevo  ', rubrosDeInteres: ['rub-otros'], avisosActivos: false, token: 'no-enviar', email: 'no@enviar.test' });
+  assert.equal(app.http.solicitudes.length, antes + 1);
+  const solicitud = app.http.solicitudes.at(-1);
+  assert.equal(solicitud.method, 'patch');
+  assert.equal(solicitud.url, '/yo');
+  assert.deepEqual(JSON.parse(solicitud.data), { nombre: 'Nombre nuevo', rubrosDeInteres: ['rub-otros'], avisosActivos: false });
+  assert.equal(cambiado.biometriaActiva, true);
+  assert.equal(cambiado.email, usuario.email);
+});
+
+test('rubros reales se paginan y dos consultas simultáneas comparten la solicitud', async () => {
+  const app = crearEntorno();
+  app.servidor.rubros = Array.from({ length: 105 }, (_, i) => ({ id: `rub-prueba-${i}`, nombre: `Rubro ${i}`, icono: 'tag', color: '#000000', orden: i }));
+  const primera = app.comercios.obtenerRubros();
+  const segunda = app.comercios.obtenerRubros();
+  assert.equal(primera, segunda);
+  assert.equal((await primera).length, 105);
+  await segunda;
+  assert.deepEqual(app.http.solicitudes.map((s) => s.params.pagina), [1, 2]);
+});
+
+test('rubros vacíos y error de red permiten volver a consultar sin conservar el fallo', async () => {
+  const app = crearEntorno();
+  app.servidor.rubros = [];
+  assert.equal((await app.comercios.obtenerRubros()).length, 0);
+  app.http.fallo = 'ERR_NETWORK';
+  await assert.rejects(app.comercios.obtenerRubros(), { codigo: 'SIN_CONEXION' });
+  app.http.fallo = null;
+  app.servidor.rubros.push({ id: 'rub-recuperado', nombre: 'Recuperado', icono: 'tag', color: '#000000', orden: 1 });
+  assert.equal((await app.comercios.obtenerRubros())[0].id, 'rub-recuperado');
+});
+
+test('las listas rechazan un sobre inválido en lugar de inventar datos', async () => {
+  const app = crearEntorno();
+  app.http.respuesta = { status: 200, data: { datos: [], meta: null } };
+  await assert.rejects(app.comercios.obtenerRubros(), { codigo: 'ERROR_INESPERADO' });
+  app.http.respuesta = { status: 200, data: { datos: [{ nombre: 'Sin id' }], meta: { total: 1, pagina: 1, porPagina: 100 } } };
+  await assert.rejects(app.comercios.obtenerRubros(), { codigo: 'ERROR_INESPERADO' });
+});
+
+test('preferencias aceptan false y lista vacía y se recuperan de /yo tras reiniciar', async () => {
+  const app = crearEntorno();
+  let usuario = await app.servicio.iniciarSesion(credencialesApi);
+  usuario = await app.cuenta.actualizarCuenta(usuario, { rubrosDeInteres: ['rub-gastronomia'], avisosActivos: true });
+  usuario = await app.cuenta.actualizarCuenta(usuario, { rubrosDeInteres: [], avisosActivos: false });
+  const reinicio = crearEntorno('ios', app.disco, app.discoLocal);
+  const recuperado = await reinicio.servicio.restaurarSesion();
+  assert.equal(recuperado.rubrosDeInteres.length, 0);
+  assert.equal(recuperado.avisosActivos, false);
+  assert.equal(reinicio.http.solicitudes[0].url, '/yo');
+});
+
+test('agregar y quitar usan PUT y DELETE sin mandar favoritos mediante PATCH', async () => {
+  const app = crearEntorno();
+  let usuario = await app.servicio.iniciarSesion(credencialesApi);
+  const original = usuario;
+  usuario = await app.cuenta.cambiarFavorito(usuario, 'com-cafe', true);
+  assert.equal(app.http.solicitudes.at(-1).method, 'put');
+  assert.equal(app.http.solicitudes.at(-1).url, '/yo/favoritos/com-cafe');
+  assert.equal(usuario.favoritos[0], 'com-cafe');
+  assert.equal(original.favoritos.length, 0);
+  usuario = await app.cuenta.cambiarFavorito(usuario, 'com-cafe', false);
+  assert.equal(app.http.solicitudes.at(-1).method, 'delete');
+  assert.equal(usuario.favoritos.length, 0);
+  usuario = await app.cuenta.cambiarFavorito(usuario, 'com-cafe', false);
+  assert.equal(usuario.favoritos.length, 0);
+  const antes = app.http.solicitudes.length;
+  await assert.rejects(app.cuenta.actualizarCuenta(usuario, { favoritos: ['com-cafe'] }), { codigo: 'DATOS_INVALIDOS' });
+  assert.equal(app.http.solicitudes.length, antes);
+});
+
+test('favoritos se reconstruyen por id, incluso dados de baja, sin asociar fotos por nombre', async () => {
+  const app = crearEntorno();
+  const comercios = await app.comercios.obtenerComerciosPorIds(['com-baja', 'com-cafe', 'com-baja']);
+  assert.deepEqual(Array.from(comercios, (c) => c.id), ['com-baja', 'com-cafe']);
+  assert.equal(comercios[0].isOpen, false);
+  assert.equal(comercios[1].imagen, undefined);
+  assert.equal(comercios[1].category, 'Gastronomía');
+  assert.equal(comercios[1].distance, 'Calle 123');
+  await assert.rejects(app.comercios.obtenerComerciosPorIds(['com-inexistente']), { codigo: 'COMERCIO_NO_ENCONTRADO' });
+});
+
+test('Buscar filtra por rubroId real y comparte consultas iguales en curso', async () => {
+  const app = crearEntorno();
+  const categorias = app.comercios.obtenerCategorias();
+  const primera = app.comercios.buscarComercios(' CAFE ', 'rub-gastronomia');
+  const segunda = app.comercios.buscarComercios(' CAFE ', 'rub-gastronomia');
+  assert.equal(primera, segunda);
+  const [rubros, comercios] = await Promise.all([categorias, primera, segunda]);
+  assert.equal(rubros[0].nombre, 'Todos');
+  assert.equal(comercios[0].id, 'com-cafe');
+  assert.equal(app.http.solicitudes.filter((s) => s.url === '/rubros').length, 1);
+  assert.equal(app.http.solicitudes.filter((s) => s.url === '/comercios').length, 1);
+  assert.equal(app.http.solicitudes.find((s) => s.url === '/comercios').params.rubroId, rubros[1].id);
+});
+
+test('un comercio con rubro desconocido produce un error explícito', async () => {
+  const app = crearEntorno();
+  app.servidor.comercios[0].rubroId = 'rub-inexistente';
+  await assert.rejects(app.comercios.obtenerComerciosPorIds(['com-cafe']), { codigo: 'ERROR_INESPERADO' });
+});
+
+test('abierto ahora usa los horarios de Argentina y contempla cierres y horarios nocturnos', () => {
+  const app = crearEntorno();
+  const comercio = app.servidor.comercios[0];
+  assert.equal(app.adaptar.estaAbierto(comercio, new Date('2026-10-26T12:00:00Z')), true);
+  assert.equal(app.adaptar.estaAbierto(comercio, new Date('2026-10-26T15:00:00Z')), false);
+  assert.equal(app.adaptar.estaAbierto({ ...comercio, activo: false }, new Date('2026-10-26T12:00:00Z')), false);
+  assert.equal(app.adaptar.estaAbierto({ ...comercio, horarios: [] }, new Date('2026-10-26T12:00:00Z')), false);
+  const nocturno = { ...comercio, horarios: [{ dia: 1, abre: '22:00', cierra: '02:00' }] };
+  assert.equal(app.adaptar.estaAbierto(nocturno, new Date('2026-10-27T04:00:00Z')), true);
+  assert.equal(app.adaptar.estaAbierto(nocturno, new Date('2026-10-27T05:00:00Z')), false);
+});
+
+test('una cuenta de comercio no intenta guardar favoritos de vecino', async () => {
+  const app = crearEntorno();
+  const usuario = await app.servicio.iniciarSesion({ email: 'comercio@api.test', contrasena: 'Prueba123' });
+  const antes = app.http.solicitudes.length;
+  await assert.rejects(app.cuenta.cambiarFavorito(usuario, 'com-cafe', true), { codigo: 'SIN_PERMISO' });
+  assert.equal(app.http.solicitudes.length, antes);
+});
+
+test('el contexto muestra el perfil real devuelto por PATCH y evita dos guardados simultáneos', async () => {
+  const app = crearEntorno();
+  const usuario = await app.servicio.iniciarSesion(credencialesApi);
+  const contexto = await app.montarContexto();
+  app.http.respuesta = { status: 200, data: { datos: { ...usuario, nombre: 'Nombre canónico de API' }, meta: null } };
+  let liberar;
+  app.http.pausa = new Promise((resolver) => { liberar = resolver; });
+  const guardar = contexto.actual().editarNombre('Nombre escrito');
+  assert.equal(contexto.actual().usuario.nombre, 'Nombre escrito');
+  await assert.rejects(contexto.actual().editarNombre('Segundo intento'), { codigo: 'OPERACION_EN_CURSO' });
+  liberar();
+  await guardar;
+  assert.equal(contexto.actual().usuario.nombre, 'Nombre canónico de API');
+  assert.equal(app.http.solicitudes.filter((s) => s.method === 'patch').length, 1);
+  assert.equal(contexto.actual().cargando, false);
+});
+
+test('el contexto revierte perfil, rubros y avisos si PATCH falla', async () => {
+  for (const accion of [(c) => c.editarNombre('Otro nombre'), (c) => c.alternarRubro('rub-otros'), (c) => c.cambiarAvisos(false)]) {
+    const app = crearEntorno();
+    await app.servicio.iniciarSesion(credencialesApi);
+    const contexto = await app.montarContexto();
+    const anterior = JSON.stringify(contexto.actual().usuario);
+    app.http.fallo = 'ERR_NETWORK';
+    await assert.rejects(accion(contexto.actual()), { codigo: 'SIN_CONEXION' });
+    assert.equal(JSON.stringify(contexto.actual().usuario), anterior);
+    assert.equal(contexto.actual().cargando, false);
+  }
+});
+
+test('el contexto agrega optimistamente, revierte ante error y permite reintentar', async () => {
+  const app = crearEntorno();
+  await app.servicio.iniciarSesion(credencialesApi);
+  const contexto = await app.montarContexto();
+  app.http.fallo = 'ERR_NETWORK';
+  const agregar = contexto.actual().alternarFavorito('com-cafe');
+  assert.equal(contexto.actual().usuario.favoritos[0], 'com-cafe');
+  await assert.rejects(agregar, { codigo: 'SIN_CONEXION' });
+  assert.equal(contexto.actual().usuario.favoritos.length, 0);
+  app.http.fallo = null;
+  await contexto.actual().alternarFavorito('com-cafe');
+  assert.equal(contexto.actual().usuario.favoritos[0], 'com-cafe');
+  assert.equal((await app.servicio.restaurarSesion()).favoritos[0], 'com-cafe');
+});
+
+test('el contexto repone un favorito si DELETE falla', async () => {
+  const app = crearEntorno();
+  app.servidor.usuarios.get(credencialesApi.email).favoritos = ['com-cafe'];
+  await app.servicio.iniciarSesion(credencialesApi);
+  const contexto = await app.montarContexto();
+  app.http.fallo = 'ERR_NETWORK';
+  const quitar = contexto.actual().alternarFavorito('com-cafe');
+  assert.equal(contexto.actual().usuario.favoritos.length, 0);
+  await assert.rejects(quitar, { codigo: 'SIN_CONEXION' });
+  assert.equal(contexto.actual().usuario.favoritos[0], 'com-cafe');
+});
+
+test('un 401 en PATCH, PUT o DELETE cierra el contexto sin restaurar el usuario optimista', async () => {
+  for (const accion of ['perfil', 'agregar', 'quitar']) {
+    const app = crearEntorno();
+    if (accion === 'quitar') app.servidor.usuarios.get(credencialesApi.email).favoritos = ['com-cafe'];
+    await app.servicio.iniciarSesion(credencialesApi);
+    const contexto = await app.montarContexto();
+    app.servidor.tokens.clear();
+    await assert.rejects(accion === 'perfil' ? contexto.actual().editarNombre('Cambio') : contexto.actual().alternarFavorito('com-cafe'), { codigo: 'SESION_INVALIDA' });
+    assert.equal(contexto.actual().usuario, null);
+    assert.equal(await app.sesion.recuperarSesion(), null);
+  }
+});
+
+test('el contexto sin autenticar no envía cambios privados', async () => {
+  const app = crearEntorno();
+  const contexto = await app.montarContexto();
+  for (const accion of [(c) => c.editarNombre('Nombre'), (c) => c.alternarRubro('rub-otros'), (c) => c.cambiarAvisos(false), (c) => c.alternarFavorito('com-cafe')]) {
+    await assert.rejects(accion(contexto.actual()), { codigo: 'SIN_SESION' });
+  }
+  assert.equal(app.http.solicitudes.length, 0);
+  assert.equal(contexto.actual().usuario, null);
+});
+
+test('un PATCH tardío después del logout no devuelve un usuario autorizado', async () => {
+  const app = crearEntorno();
+  const usuario = await app.servicio.iniciarSesion(credencialesApi);
+  let liberar;
+  app.http.pausa = new Promise((resolver) => { liberar = resolver; });
+  const guardado = assert.rejects(app.cuenta.actualizarCuenta(usuario, { nombre: 'Tardío' }), { codigo: 'SIN_SESION' });
+  await new Promise(setImmediate);
+  await app.servicio.cerrarSesion();
+  liberar();
+  await guardado;
+  assert.equal(await app.sesion.recuperarSesion(), null);
+});
+
+test('PATCH con usuario ajeno invalida la sesión y una respuesta malformada conserva el estado', async () => {
+  for (const ajeno of [true, false]) {
+    const app = crearEntorno();
+    const usuario = await app.servicio.iniciarSesion(credencialesApi);
+    const contexto = await app.montarContexto();
+    app.http.respuesta = { status: 200, data: { datos: ajeno ? { ...usuario, id: 'usr-otro' } : { nombre: 'Incompleto' }, meta: null } };
+    await assert.rejects(contexto.actual().editarNombre('Cambio'), { codigo: ajeno ? 'SESION_INVALIDA' : 'ERROR_INESPERADO' });
+    assert.equal(contexto.actual().usuario?.nombre ?? null, ajeno ? null : usuario.nombre);
+  }
 });

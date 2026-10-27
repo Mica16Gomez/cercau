@@ -12,4 +12,4 @@ export type Comercio = {
   isOpen: boolean;
   imagen?: ImageSource;
 };
-export type Rubro = { id: string; nombre: string };
+export type Rubro = { id: string; nombre: string; icono: string; color: string; orden: number };

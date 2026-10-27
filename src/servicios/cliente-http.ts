@@ -34,6 +34,15 @@ export function normalizarErrorHttp(error: unknown): ErrorAutenticacion {
   if (estado === 409 && codigo === 'EMAIL_YA_REGISTRADO') {
     return new ErrorAutenticacion('EMAIL_REGISTRADO', 'Ya existe una cuenta con ese email. Iniciá sesión.');
   }
+  if (estado === 403) {
+    return new ErrorAutenticacion('SIN_PERMISO', 'Esta acción está disponible para cuentas de vecino.');
+  }
+  if (estado === 404 && codigo === 'COMERCIO_NO_ENCONTRADO') {
+    return new ErrorAutenticacion('COMERCIO_NO_ENCONTRADO', 'Uno de los comercios ya no está disponible. Reintentá la consulta.');
+  }
+  if (estado === 422 && codigo === 'RUBRO_NO_ENCONTRADO') {
+    return new ErrorAutenticacion('DATOS_INVALIDOS', 'Uno de los rubros ya no está disponible. Volvé a cargar los rubros e intentá nuevamente.');
+  }
   if (estado === 400 || estado === 422) {
     return new ErrorAutenticacion('DATOS_INVALIDOS', 'Revisá los datos del formulario e intentá nuevamente.');
   }

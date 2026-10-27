@@ -7,16 +7,15 @@ import { validarInicioSesion, validarRegistro } from './validaciones-autenticaci
 import { esUsuarioApi, type RespuestaUno, type SesionApi, type UsuarioApi } from '@/tipos/api';
 import type { DatosInicioSesion, DatosRegistro, Usuario } from '@/tipos/usuario';
 
-// La identidad viene de la API. Perfil, preferencias y favoritos siguen locales
-// hasta su próxima etapa de integración; nunca guardamos datos del formulario.
+// La API es la fuente del perfil completo. Sólo la biometría pertenece al dispositivo.
 async function prepararUsuario(datos: UsuarioApi): Promise<Usuario> {
   if (!esUsuarioApi(datos)) throw new ErrorAutenticacion('ERROR_INESPERADO', 'La API devolvió datos de cuenta que no pudimos interpretar.');
   const local = await obtenerUsuario(datos.id);
   return guardarUsuario({
     id: datos.id, email: datos.email, rol: datos.rol, comercioId: datos.comercioId,
-    nombre: local?.nombre ?? datos.nombre,
-    favoritos: local?.favoritos ?? [], rubrosDeInteres: local?.rubrosDeInteres ?? [],
-    avisosActivos: local?.avisosActivos ?? false, biometriaActiva: local?.biometriaActiva ?? false,
+    nombre: datos.nombre,
+    favoritos: datos.favoritos, rubrosDeInteres: datos.rubrosDeInteres,
+    avisosActivos: datos.avisosActivos, biometriaActiva: local?.biometriaActiva ?? false,
   });
 }
 

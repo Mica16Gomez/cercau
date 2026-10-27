@@ -4,7 +4,7 @@ import { AppState } from 'react-native';
 import * as servicio from '@/servicios/autenticacion';
 import { suscribirSesionInvalidada } from '@/servicios/almacenamiento-sesion';
 import { solicitarValidacionBiometrica } from '@/servicios/biometria';
-import { actualizarCuenta } from '@/servicios/cuenta';
+import { actualizarCuenta, cambiarFavorito } from '@/servicios/cuenta';
 import { ErrorAutenticacion, obtenerMensajeError } from '@/servicios/errores-autenticacion';
 import type { CambiosCuenta, DatosInicioSesion, DatosRegistro, Usuario } from '@/tipos/usuario';
 
@@ -108,12 +108,12 @@ export function ProveedorAutenticacion({ children }: PropsWithChildren) {
     return actual;
   }
 
-  async function guardarCambios(cambios: CambiosCuenta) {
+  async function guardarCambios(cambios: CambiosCuenta, persistir?: (actual: Usuario) => Promise<Usuario>) {
     const anterior = exigirUsuario();
     const siguiente = { ...anterior, ...cambios };
     // El mismo usuario alimenta todas las pantallas; ante un fallo se revierte.
     mostrarUsuario(siguiente);
-    try { return await actualizarCuenta(anterior, cambios); }
+    try { return await (persistir ? persistir(anterior) : actualizarCuenta(anterior, cambios)); }
     catch (error) {
       const vencida = error instanceof ErrorAutenticacion && (error.codigo === 'SESION_INVALIDA' || error.codigo === 'SIN_SESION');
       mostrarUsuario(vencida || !usuarioActual.current ? null : anterior);
@@ -165,7 +165,7 @@ export function ProveedorAutenticacion({ children }: PropsWithChildren) {
       alternarFavorito: (id) => ejecutar(async () => {
         const actual = exigirUsuario();
         const favoritos = actual.favoritos.includes(id) ? actual.favoritos.filter((item) => item !== id) : [...actual.favoritos, id];
-        return guardarCambios({ favoritos });
+        return guardarCambios({ favoritos }, (anterior) => cambiarFavorito(anterior, id, !anterior.favoritos.includes(id)));
       }),
       alternarRubro: (id) => ejecutar(async () => {
         const actual = exigirUsuario();

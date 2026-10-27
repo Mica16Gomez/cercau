@@ -1,5 +1,7 @@
 # Autenticación con la API del profesor
 
+> Historial de la primera conexión de autenticación. La etapa actual usa SDK 58 y ya sincroniza perfil, preferencias y favoritos: ver [cuenta con la API](cuenta-api.md). Las referencias a funciones locales y verificaciones de SDK 57 de este documento describen el estado del 23/10/2026.
+
 Etapa del 23/10/2026, rama `mica-api`. Se conserva Expo SDK 57, las rutas, las pestañas, los componentes y sus estilos. No se cambia la API.
 
 ## Configuración y contrato
