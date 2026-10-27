@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useRef, useState } from 'react';
-import { Keyboard, StyleSheet, TextInput, View } from 'react-native';
+import { Keyboard, StyleSheet, View, type TextInputInstance } from 'react-native';
 
 import { AccesoAlternativo, BotonCuenta, CampoCuenta, MensajeError, TarjetaCuenta } from '@/components/autenticacion/controles';
 import { PantallaAutenticacion } from '@/components/autenticacion/pantalla-autenticacion';
@@ -21,10 +21,10 @@ export default function RegistrarseScreen() {
   const [tocados, setTocados] = useState<Partial<Record<CampoFormulario, boolean>>>({});
   const [intento, setIntento] = useState(false);
   const [enviando, setEnviando] = useState(false);
-  const nombreRef = useRef<TextInput>(null);
-  const emailRef = useRef<TextInput>(null);
-  const contrasenaRef = useRef<TextInput>(null);
-  const confirmacionRef = useRef<TextInput>(null);
+  const nombreRef = useRef<TextInputInstance>(null);
+  const emailRef = useRef<TextInputInstance>(null);
+  const contrasenaRef = useRef<TextInputInstance>(null);
+  const confirmacionRef = useRef<TextInputInstance>(null);
   const errores = validarRegistro({ nombre, email, contrasena, confirmacion });
 
   function errorCampo(campo: CampoFormulario) { return intento || tocados[campo] ? errores[campo] : undefined; }

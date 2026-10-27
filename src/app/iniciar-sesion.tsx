@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useRef, useState } from 'react';
-import { Keyboard, TextInput } from 'react-native';
+import { Keyboard, type TextInputInstance } from 'react-native';
 
 import { AccesoAlternativo, BotonCuenta, CampoCuenta, MensajeError, TarjetaCuenta } from '@/components/autenticacion/controles';
 import { FaceIdPreparado } from '@/components/autenticacion/face-id-preparado';
@@ -16,8 +16,8 @@ export default function IniciarSesionScreen() {
   const [error, setError] = useState<string | null>(null);
   const [tocados, setTocados] = useState({ email: false, contrasena: false });
   const [enviando, setEnviando] = useState(false);
-  const emailRef = useRef<TextInput>(null);
-  const contrasenaRef = useRef<TextInput>(null);
+  const emailRef = useRef<TextInputInstance>(null);
+  const contrasenaRef = useRef<TextInputInstance>(null);
   const errores = validarInicioSesion({ email, contrasena });
 
   async function ingresar() {
