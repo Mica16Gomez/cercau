@@ -19,7 +19,6 @@ export type DatosInicioSesion = {
 
 export type DatosRegistro = DatosInicioSesion & {
   nombre: string;
-  rol: RolUsuario;
 };
 
 export function esRolUsuario(valor: unknown): valor is RolUsuario {
@@ -32,7 +31,7 @@ export function esUsuario(valor: unknown): valor is Usuario {
 
   return (
     'id' in valor && typeof valor.id === 'string' && valor.id.length > 0 &&
-    'nombre' in valor && typeof valor.nombre === 'string' && valor.nombre.trim().length >= 2 &&
+    'nombre' in valor && typeof valor.nombre === 'string' && valor.nombre.trim().length >= 1 &&
     'email' in valor && typeof valor.email === 'string' && /^\S+@\S+\.\S+$/.test(valor.email) &&
     'rol' in valor && esRolUsuario(valor.rol) &&
     'comercioId' in valor && (valor.comercioId === null || typeof valor.comercioId === 'string' && valor.comercioId.length > 0) &&
@@ -48,5 +47,5 @@ function esListaIds(valor: unknown): valor is string[] {
   return Array.isArray(valor) && valor.every((id) => typeof id === 'string' && id.length > 0) && new Set(valor).size === valor.length;
 }
 
-export type SesionGuardada = { version: 2; token: string; usuarioId: string; venceEn: number };
+export type SesionGuardada = { version: 3; token: string; usuarioId: string };
 export type CambiosCuenta = Partial<Pick<Usuario, 'nombre' | 'favoritos' | 'rubrosDeInteres' | 'avisosActivos' | 'biometriaActiva'>>;

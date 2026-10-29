@@ -1,7 +1,8 @@
 import { Tabs, TabList, TabTrigger, TabSlot, type TabTriggerSlotProps } from 'expo-router/ui';
 import { usePathname } from 'expo-router';
 import { SymbolView, type SymbolViewProps } from 'expo-symbols';
-import { Pressable, StyleSheet } from 'react-native';
+import type { RefAttributes } from 'react';
+import { Pressable, StyleSheet, type ViewInstance } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -38,7 +39,8 @@ export default function AppTabs() {
   );
 }
 
-type TabButtonProps = TabTriggerSlotProps & { icon: SymbolViewProps['name']; referencia: boolean };
+// React Native 0.88 referencia la instancia de View, no el componente.
+type TabButtonProps = Omit<TabTriggerSlotProps, 'ref'> & RefAttributes<ViewInstance> & { icon: SymbolViewProps['name']; referencia: boolean };
 
 function TabButton({ children, isFocused, icon, referencia, ...props }: TabButtonProps) {
   const theme = useTheme();

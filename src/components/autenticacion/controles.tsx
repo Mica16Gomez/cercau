@@ -1,6 +1,6 @@
 import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 import { useId, useState, type PropsWithChildren, type Ref } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, TextInput, View, type StyleProp, type TextInputProps, type ViewStyle } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, TextInput, View, type StyleProp, type TextInputInstance, type TextInputProps, type ViewStyle } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { EstadoInterfaz } from '@/components/interfaz';
@@ -51,7 +51,7 @@ type CampoProps = TextInputProps & {
   ayuda?: string;
   esContrasena?: boolean;
   icono?: SymbolViewProps['name'];
-  ref?: Ref<TextInput>;
+  ref?: Ref<TextInputInstance>;
 };
 
 export function CampoCuenta({ etiqueta, error, ayuda, esContrasena = false, icono, ref, style, onFocus, onBlur, ...props }: CampoProps) {

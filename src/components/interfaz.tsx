@@ -21,13 +21,13 @@ export function SectionHeader({ titulo, detalle }: { titulo: string; detalle?: s
   </View>;
 }
 
-export function CategoryChip({ titulo, seleccionado, icono, ancho, onPress }: { titulo: string; seleccionado: boolean; icono?: SymbolViewProps['name']; ancho: number; onPress: () => void }) {
+export function CategoryChip({ titulo, seleccionado, icono, ancho, compacto = false, onPress }: { titulo: string; seleccionado: boolean; icono?: SymbolViewProps['name']; ancho?: number; compacto?: boolean; onPress: () => void }) {
   const tema = useTheme();
   return <Pressable accessibilityRole="button" accessibilityLabel={titulo} accessibilityState={{ selected: seleccionado }} onPress={onPress}
-    style={({ pressed }) => [styles.chipTouch, { width: ancho }, pressed && styles.pressed]}>
-    <View style={[styles.chip, { backgroundColor: seleccionado ? tema.forest : tema.backgroundElement, borderColor: seleccionado ? tema.forest : tema.border }]}>
-      {icono && <SymbolView name={icono} size={23} tintColor={seleccionado ? tema.onForest : tema.primary} />}
-      <ThemedText style={styles.chipLabel} themeColor={seleccionado ? 'onForest' : 'text'}>{titulo}</ThemedText>
+    style={({ pressed }) => [styles.chipTouch, compacto ? styles.chipTouchCompacto : { width: ancho }, pressed && styles.pressed]}>
+    <View style={[styles.chip, compacto && styles.chipCompacto, { backgroundColor: seleccionado ? tema.forest : tema.backgroundElement, borderColor: seleccionado ? tema.forest : tema.border }]}>
+      {!compacto && icono && <SymbolView name={icono} size={23} tintColor={seleccionado ? tema.onForest : tema.primary} />}
+      <ThemedText style={styles.chipLabel} numberOfLines={compacto ? 1 : undefined} themeColor={seleccionado ? 'onForest' : 'text'}>{titulo}</ThemedText>
     </View>
   </Pressable>;
 }
@@ -89,6 +89,8 @@ const styles = StyleSheet.create({
   chipTouch: { minHeight: 72, minWidth: 44 },
   chip: { flex: 1, minHeight: 72, borderWidth: 1, borderRadius: 20, paddingHorizontal: 4, paddingVertical: 10, gap: 6, alignItems: 'center', justifyContent: 'center' },
   chipLabel: { fontSize: 12, lineHeight: 17, textAlign: 'center' },
+  chipTouchCompacto: { minHeight: 44, flexShrink: 0 },
+  chipCompacto: { flex: 0, minHeight: 44, borderRadius: Radii.pill, paddingHorizontal: 16, paddingVertical: 10, gap: 0 },
   search: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: Radii.pill, paddingLeft: 18, paddingRight: 2, boxShadow: '0px 3px 12px rgba(38,58,50,0.06)' },
   input: { flex: 1, minWidth: 0, fontSize: 13, paddingVertical: 14 },
   searchButton: { width: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },

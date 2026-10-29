@@ -1,5 +1,7 @@
 # Cierre funcional del módulo de cuenta — 20 de octubre de 2026
 
+> Documento histórico. La autenticación local fue reemplazada por la API del profesor. Ver [Autenticación con la API](autenticacion-api.md) para el estado vigente.
+
 ## Alcance y estado anterior
 
 Ya existían el contexto de autenticación, los formularios con validaciones, la selección de rol, el almacenamiento de un perfil con SecureStore, el control para ver/ocultar contraseñas, la confirmación de logout, los componentes visuales y 12 pruebas con Node.

@@ -1,5 +1,7 @@
 # Base, autenticación y cuenta — etapa 1
 
+> Documento histórico. La autenticación local de esta etapa fue reemplazada. Para el comportamiento vigente y las pruebas manuales, ver [Autenticación con la API](autenticacion-api.md).
+
 ## Rutas y navegación
 
 ```text

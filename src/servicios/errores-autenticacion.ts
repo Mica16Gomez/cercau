@@ -6,7 +6,12 @@ type CodigoError =
   | 'SESION_INVALIDA'
   | 'BIOMETRIA'
   | 'SIN_SESION'
-  | 'OPERACION_EN_CURSO';
+  | 'SIN_PERMISO'
+  | 'COMERCIO_NO_ENCONTRADO'
+  | 'OPERACION_EN_CURSO'
+  | 'API_NO_DISPONIBLE'
+  | 'SIN_CONEXION'
+  | 'ERROR_INESPERADO';
 
 export class ErrorAutenticacion extends Error {
   constructor(public readonly codigo: CodigoError, mensaje: string) {
