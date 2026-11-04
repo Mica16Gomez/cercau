@@ -1,10 +1,10 @@
-import { LogoCercau } from '@/components/logo-cercau'; // Importamos el componente de logo de la app
+import { LogoCercau } from '@/components/logo-cercau';
 import { useAutenticacion } from '@/contextos/autenticacion';
 import { useTheme } from '@/hooks/use-theme';
 import { obtenerPromociones } from '@/servicios/promociones';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Image, Modal, StyleSheet, Text, TouchableOpacity, Vibration, View } from 'react-native';
+import { ActivityIndicator, FlatList, Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, Vibration, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 type PromocionType = {
@@ -82,26 +82,32 @@ export default function PromotionsScreen() {
 
   if (esComercio) {
     return (
-      <SafeAreaView style={[styles.safeArea, { backgroundColor: tema.background }]}>
-        <View style={[styles.containerComercio, { backgroundColor: tema.background }]}>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: tema.background }]} edges={['top', 'left', 'right']}>
+        <ScrollView contentContainerStyle={[styles.containerComercio, { backgroundColor: tema.background }]}>
           <View style={styles.headerRow}>
             <LogoCercau variante="claro" />
           </View>
-          <Text style={[styles.titulo, { color: tema.text }]}>Panel de Validación</Text>
-          <Text style={styles.subtitulo}>Simulador de escáner QR de cupones para el comercio.</Text>
+          
+          <View style={styles.infoPanelBox}>
+            <Text style={[styles.titulo, { color: tema.text }]}>Panel de Comercio</Text>
+            <Text style={[styles.subtituloDinamico, { color: tema.text, opacity: 0.7 }]}>
+              Validación de cupones y escáner activo de códigos del cliente.
+            </Text>
 
-          <TouchableOpacity style={styles.areaEscanerSimulado} onPress={simularEscaneoQR}>
-            <Text style={styles.textoEscanerInstruccion}>📷 Tocar aquí para simular escaneo de QR</Text>
-            <Text style={styles.textoEscanerSub}>El cliente presenta su código en pantalla</Text>
-          </TouchableOpacity>
+            <TouchableOpacity style={styles.areaEscanerSimulado} onPress={simularEscaneoQR} activeOpacity={0.8}>
+              <Text style={styles.iconoEscaner}>📷</Text>
+              <Text style={styles.textoEscanerInstruccion}>Escanear Código QR del Cliente</Text>
+              <Text style={styles.textoEscanerSub}>Tocar para procesar validación de promoción</Text>
+            </TouchableOpacity>
 
-          {cuponEscaneado && (
-            <View style={styles.resultadoBox}>
-              <Text style={styles.textoResultado}>¡Cupón Validado con Éxito!</Text>
-              <Text style={styles.codigoEscaneado}>{cuponEscaneado}</Text>
-            </View>
-          )}
-        </View>
+            {cuponEscaneado && (
+              <View style={styles.resultadoBox}>
+                <Text style={styles.textoResultado}>¡Cupón Validado con Éxito!</Text>
+                <Text style={styles.codigoEscaneado}>{cuponEscaneado}</Text>
+              </View>
+            )}
+          </View>
+        </ScrollView>
       </SafeAreaView>
     );
   }
@@ -134,7 +140,7 @@ export default function PromotionsScreen() {
         </View>
 
         <Text style={[styles.titulo, { color: tema.text }]}>Promociones</Text>
-        <Text style={styles.subtitulo}>Lo bueno de comprar cerca.</Text>
+        <Text style={[styles.subtituloDinamico, { color: tema.text, opacity: 0.7 }]}>Lo bueno de comprar cerca.</Text>
         
         <View style={styles.contenedorFiltros}>
           <TouchableOpacity 
@@ -179,7 +185,8 @@ export default function PromotionsScreen() {
                   <Text style={styles.comercioNombre}>
                     {item.comercio?.nombre || 'Comercio local'}
                   </Text>
-                  <Text style={styles.promoTitulo}>
+                  {/* Forzamos color oscuro para que contraste perfecto con el fondo blanco de la tarjeta */}
+                  <Text style={[styles.promoTitulo, { color: '#1a1a1a' }]}>
                     {item.titulo || item.descripcion}
                   </Text>
                   {item.descuento ? (
@@ -198,9 +205,9 @@ export default function PromotionsScreen() {
           onRequestClose={() => setPromoSeleccionada(null)}
         >
           <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
+            <View style={[styles.modalContent, { backgroundColor: '#fff' }]}>
               <Text style={styles.modalComercio}>{promoSeleccionada?.comercio?.nombre || 'Comercio local'}</Text>
-              <Text style={styles.modalTitulo}>{promoSeleccionada?.titulo || promoSeleccionada?.descripcion}</Text>
+              <Text style={[styles.modalTitulo, { color: '#1a1a1a' }]}>{promoSeleccionada?.titulo || promoSeleccionada?.descripcion}</Text>
               
               {promoSeleccionada?.descuento && (
                 <Text style={styles.modalDescuento}>{promoSeleccionada.descuento}% de Descuento</Text>
@@ -223,7 +230,7 @@ export default function PromotionsScreen() {
                 style={styles.botonCerrar} 
                 onPress={() => setPromoSeleccionada(null)}
               >
-                <Text style={styles.textoBotonCerrar}>Cerrar</Text>
+                <Text style={[styles.textoBotonCerrar, { color: '#1a1a1a' }]}>Cerrar</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -236,16 +243,18 @@ export default function PromotionsScreen() {
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   container: { flex: 1, paddingHorizontal: 16 },
-  containerComercio: { flex: 1, paddingHorizontal: 16, justifyContent: 'center', alignItems: 'center' },
+  containerComercio: { flexGrow: 1, paddingHorizontal: 16, paddingBottom: 24, alignItems: 'flex-start' },
+  infoPanelBox: { width: '100%', marginTop: 8 },
   
-  headerRow: { flexDirection: 'row', alignItems: 'center', marginTop: 12, marginBottom: 8 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', marginTop: 12, marginBottom: 8, alignSelf: 'flex-start' },
   
   titulo: { fontSize: 24, fontWeight: 'bold', marginTop: 4 },
-  subtitulo: { fontSize: 13, color: '#666', marginBottom: 16 },
+  subtituloDinamico: { fontSize: 13, marginBottom: 20 },
   
-  areaEscanerSimulado: { width: '100%', height: 260, backgroundColor: '#1e293b', borderRadius: 16, justifyContent: 'center', alignItems: 'center', padding: 20, borderWidth: 2, borderColor: '#334155', borderStyle: 'dashed' },
-  textoEscanerInstruccion: { color: '#fff', fontSize: 16, fontWeight: 'bold', textAlign: 'center', marginBottom: 8 },
-  textoEscanerSub: { color: '#94a3b8', fontSize: 13, textAlign: 'center' },
+  areaEscanerSimulado: { width: '100%', backgroundColor: '#2b5329', borderRadius: 16, justifyContent: 'center', alignItems: 'center', padding: 28, elevation: 4 },
+  iconoEscaner: { fontSize: 32, marginBottom: 8 },
+  textoEscanerInstruccion: { color: '#fff', fontSize: 17, fontWeight: 'bold', textAlign: 'center', marginBottom: 6 },
+  textoEscanerSub: { color: '#d1d5db', fontSize: 13, textAlign: 'center' },
   resultadoBox: { marginTop: 20, backgroundColor: '#10b981', padding: 16, borderRadius: 12, alignItems: 'center', width: '100%' },
   textoResultado: { color: '#fff', fontSize: 16, fontWeight: 'bold', marginBottom: 4 },
   codigoEscaneado: { color: '#fff', fontSize: 15, letterSpacing: 1 },
@@ -270,22 +279,22 @@ const styles = StyleSheet.create({
   imagen: { width: '100%', height: 160 },
   contenidoCard: { padding: 16 },
   comercioNombre: { fontSize: 12, color: '#2b5329', fontWeight: '700', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 },
-  promoTitulo: { fontSize: 17, fontWeight: 'bold', color: '#1a1a1a', marginBottom: 6 },
+  promoTitulo: { fontSize: 17, fontWeight: 'bold', marginBottom: 6 },
   descuentoText: { fontSize: 13, color: '#d97706', fontWeight: '600' },
 
   centrado: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   error: { color: 'red', fontSize: 16 },
 
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 },
-  modalContent: { backgroundColor: '#fff', width: '100%', borderRadius: 16, padding: 24, alignItems: 'center' },
+  modalContent: { width: '100%', borderRadius: 16, padding: 24, alignItems: 'center' },
   modalComercio: { fontSize: 13, color: '#2b5329', fontWeight: '600', marginBottom: 8, textTransform: 'uppercase' },
-  modalTitulo: { fontSize: 20, fontWeight: 'bold', textAlign: 'center', marginBottom: 12, color: '#1a1a1a' },
+  modalTitulo: { fontSize: 20, fontWeight: 'bold', textAlign: 'center', marginBottom: 12 },
   modalDescuento: { fontSize: 16, color: '#d97706', fontWeight: 'bold', marginBottom: 20 },
   botonGenerar: { backgroundColor: '#2b5329', paddingVertical: 12, paddingHorizontal: 24, borderRadius: 8, width: '100%', alignItems: 'center', marginBottom: 12 },
   textoBotonGenerar: { color: '#fff', fontSize: 15, fontWeight: 'bold' },
   cuponBox: { backgroundColor: '#f3f4f6', padding: 16, borderRadius: 8, width: '100%', alignItems: 'center', marginBottom: 12, borderWidth: 1, borderColor: '#d1d5db', borderStyle: 'dashed' },
   cuponLabel: { fontSize: 12, color: '#4b5563', marginBottom: 4 },
-  cuponTexto: { fontSize: 20, fontWeight: 'bold', color: '#1f2937', letterSpacing: 2 },
+  cuponTexto: { fontSize: 20, fontWeight: 'bold', letterSpacing: 2, color: '#1f2937' },
   botonCerrar: { paddingVertical: 8, width: '100%', alignItems: 'center' },
-  textoBotonCerrar: { color: '#666', fontSize: 15, fontWeight: '600' }
+  textoBotonCerrar: { fontSize: 15, fontWeight: '600' }
 });
