@@ -3,6 +3,7 @@ import { obtenerPromociones } from '@/servicios/promociones';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Image, Modal, StyleSheet, Text, TouchableOpacity, Vibration, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 type PromocionType = {
   id: string;
@@ -15,6 +16,13 @@ type PromocionType = {
     categoria?: string;
   };
 };
+
+const fotosFallback = [
+  'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=600&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=600&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=600&auto=format&fit=crop&q=80',
+];
 
 export default function PromotionsScreen() {
   const { usuario } = useAutenticacion();
@@ -48,7 +56,6 @@ export default function PromotionsScreen() {
   }, [filtroActivo, esComercio]);
 
   const generarCodigo = () => {
-    // REGLA DEL PRD: Si es visitante anónimo, lo mandamos a iniciar sesión para obtener el código
     if (!usuario) {
       setPromoSeleccionada(null);
       router.push('/iniciar-sesion');
@@ -72,157 +79,166 @@ export default function PromotionsScreen() {
 
   if (esComercio) {
     return (
-      <View style={styles.containerComercio}>
-        <View style={styles.headerRow}>
-          <Text style={styles.logoMarca}>Cercau<Text style={styles.logoPunto}>.</Text></Text>
-        </View>
-        <Text style={styles.titulo}>Panel de Validación</Text>
-        <Text style={styles.subtitulo}>Simulador de escáner QR de cupones para el comercio.</Text>
-
-        <TouchableOpacity style={styles.areaEscanerSimulado} onPress={simularEscaneoQR}>
-          <Text style={styles.textoEscanerInstruccion}>📷 Tocar aquí para simular escaneo de QR</Text>
-          <Text style={styles.textoEscanerSub}>El cliente presenta su código en pantalla</Text>
-        </TouchableOpacity>
-
-        {cuponEscaneado && (
-          <View style={styles.resultadoBox}>
-            <Text style={styles.textoResultado}>¡Cupón Validado con Éxito!</Text>
-            <Text style={styles.codigoEscaneado}>{cuponEscaneado}</Text>
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.containerComercio}>
+          <View style={styles.headerRow}>
+            <Text style={styles.logoMarca}>Cercau<Text style={styles.logoPunto}>.</Text></Text>
           </View>
-        )}
-      </View>
+          <Text style={styles.titulo}>Panel de Validación</Text>
+          <Text style={styles.subtitulo}>Simulador de escáner QR de cupones para el comercio.</Text>
+
+          <TouchableOpacity style={styles.areaEscanerSimulado} onPress={simularEscaneoQR}>
+            <Text style={styles.textoEscanerInstruccion}>📷 Tocar aquí para simular escaneo de QR</Text>
+            <Text style={styles.textoEscanerSub}>El cliente presenta su código en pantalla</Text>
+          </TouchableOpacity>
+
+          {cuponEscaneado && (
+            <View style={styles.resultadoBox}>
+              <Text style={styles.textoResultado}>¡Cupón Validado con Éxito!</Text>
+              <Text style={styles.codigoEscaneado}>{cuponEscaneado}</Text>
+            </View>
+          )}
+        </View>
+      </SafeAreaView>
     );
   }
 
   if (cargando) {
     return (
-      <View style={styles.centrado}>
-        <ActivityIndicator size="large" color="#e5e5e5" />
-      </View>
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.centrado}>
+          <ActivityIndicator size="large" color="#4ade80" />
+        </View>
+      </SafeAreaView>
     );
   }
 
   if (error) {
     return (
-      <View style={styles.centrado}>
-        <Text style={styles.error}>{error}</Text>
-      </View>
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.centrado}>
+          <Text style={styles.error}>{error}</Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.headerRow}>
-        <Text style={styles.logoMarca}>Cercau<Text style={styles.logoPunto}>.</Text></Text>
-      </View>
-
-      <Text style={styles.titulo}>Promociones</Text>
-      <Text style={styles.subtitulo}>Lo bueno de comprar cerca.</Text>
-      
-      <View style={styles.contenedorFiltros}>
-        <TouchableOpacity 
-          style={[styles.chipFiltro, filtroActivo === 'vigentes' && styles.chipActivo]}
-          onPress={() => setFiltroActivo('vigentes')}
-        >
-          <Text style={[styles.textoChip, filtroActivo === 'vigentes' && styles.textoChipActivo]}>Vigentes</Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.chipFiltro, filtroActivo === 'proximas' && styles.chipActivo]}
-          onPress={() => setFiltroActivo('proximas')}
-        >
-          <Text style={[styles.textoChip, filtroActivo === 'proximas' && styles.textoChipActivo]}>Próximas</Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.chipFiltro, filtroActivo === 'vencer' && styles.chipActivo]}
-          onPress={() => setFiltroActivo('vencer')}
-        >
-          <Text style={[styles.textoChip, filtroActivo === 'vencer' && styles.textoChipActivo]}>Por vencer</Text>
-        </TouchableOpacity>
-      </View>
-
-      <FlatList
-        data={promociones}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <TouchableOpacity 
-            style={styles.card} 
-            onPress={() => {
-              setPromoSeleccionada(item);
-              setCodigoUso(null);
-            }}
-          >
-            {item.imagenUrl && item.imagenUrl.startsWith('http') ? (
-              <Image source={{ uri: item.imagenUrl }} style={styles.imagen} resizeMode="cover" />
-            ) : (
-              <View style={styles.bannerPlaceholder}>
-                <Text style={styles.bannerEtiqueta}>
-                  {item.descuento ? `✨ ${item.descuento}% DE DESCUENTO` : '🔥 PROMOCIÓN EXCLUSIVA'}
-                </Text>
-              </View>
-            )}
-            
-            <View style={styles.contenidoCard}>
-              <Text style={styles.comercioNombre}>
-                {item.comercio?.nombre || 'Comercio local'}
-              </Text>
-              <Text style={styles.promoTitulo}>
-                {item.titulo || item.descripcion}
-              </Text>
-              {item.descuento ? (
-                <Text style={styles.descuentoText}>{item.descuento}% de descuento</Text>
-              ) : null}
-            </View>
-          </TouchableOpacity>
-        )}
-      />
-
-      <Modal
-        visible={promoSeleccionada !== null}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setPromoSeleccionada(null)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalComercio}>{promoSeleccionada?.comercio?.nombre || 'Comercio local'}</Text>
-            <Text style={styles.modalTitulo}>{promoSeleccionada?.titulo || promoSeleccionada?.descripcion}</Text>
-            
-            {promoSeleccionada?.descuento && (
-              <Text style={styles.modalDescuento}>{promoSeleccionada.descuento}% de Descuento</Text>
-            )}
-
-            {codigoUso ? (
-              <View style={styles.cuponBox}>
-                <Text style={styles.cuponLabel}>Tu código de uso:</Text>
-                <Text style={styles.cuponTexto}>{codigoUso}</Text>
-              </View>
-            ) : (
-              <TouchableOpacity style={styles.botonGenerar} onPress={generarCodigo}>
-                <Text style={styles.textoBotonGenerar}>
-                  {usuario ? 'Generar Código de Uso' : 'Iniciar sesión para obtener código'}
-                </Text>
-              </TouchableOpacity>
-            )}
-
-            <TouchableOpacity 
-              style={styles.botonCerrar} 
-              onPress={() => setPromoSeleccionada(null)}
-            >
-              <Text style={styles.textoBotonCerrar}>Cerrar</Text>
-            </TouchableOpacity>
-          </View>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      <View style={styles.container}>
+        <View style={styles.headerRow}>
+          <Text style={styles.logoMarca}>Cercau<Text style={styles.logoPunto}>.</Text></Text>
         </View>
-      </Modal>
-    </View>
+
+        <Text style={styles.titulo}>Promociones</Text>
+        <Text style={styles.subtitulo}>Lo bueno de comprar cerca.</Text>
+        
+        <View style={styles.contenedorFiltros}>
+          <TouchableOpacity 
+            style={[styles.chipFiltro, filtroActivo === 'vigentes' && styles.chipActivo]}
+            onPress={() => setFiltroActivo('vigentes')}
+          >
+            <Text style={[styles.textoChip, filtroActivo === 'vigentes' && styles.textoChipActivo]}>Vigentes</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.chipFiltro, filtroActivo === 'proximas' && styles.chipActivo]}
+            onPress={() => setFiltroActivo('proximas')}
+          >
+            <Text style={[styles.textoChip, filtroActivo === 'proximas' && styles.textoChipActivo]}>Próximas</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.chipFiltro, filtroActivo === 'vencer' && styles.chipActivo]}
+            onPress={() => setFiltroActivo('vencer')}
+          >
+            <Text style={[styles.textoChip, filtroActivo === 'vencer' && styles.textoChipActivo]}>Por vencer</Text>
+          </TouchableOpacity>
+        </View>
+
+        <FlatList
+          data={promociones}
+          keyExtractor={(item, index) => item.id || index.toString()}
+          renderItem={({ item, index }) => {
+            // Verificamos si la imagen del item es una URL real y válida en texto
+            const esUrlValida = item.imagenUrl && typeof item.imagenUrl === 'string' && item.imagenUrl.startsWith('http');
+            const imagenAMostrar = esUrlValida ? item.imagenUrl : fotosFallback[index % fotosFallback.length];
+
+            return (
+              <TouchableOpacity 
+                style={styles.card} 
+                onPress={() => {
+                  setPromoSeleccionada(item);
+                  setCodigoUso(null);
+                }}
+              >
+                <Image source={{ uri: imagenAMostrar }} style={styles.imagen} resizeMode="cover" />
+                
+                <View style={styles.contenidoCard}>
+                  <Text style={styles.comercioNombre}>
+                    {item.comercio?.nombre || 'Comercio local'}
+                  </Text>
+                  <Text style={styles.promoTitulo}>
+                    {item.titulo || item.descripcion}
+                  </Text>
+                  {item.descuento ? (
+                    <Text style={styles.descuentoText}>{item.descuento}% de descuento</Text>
+                  ) : null}
+                </View>
+              </TouchableOpacity>
+            );
+          }}
+        />
+
+        <Modal
+          visible={promoSeleccionada !== null}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setPromoSeleccionada(null)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalComercio}>{promoSeleccionada?.comercio?.nombre || 'Comercio local'}</Text>
+              <Text style={styles.modalTitulo}>{promoSeleccionada?.titulo || promoSeleccionada?.descripcion}</Text>
+              
+              {promoSeleccionada?.descuento && (
+                <Text style={styles.modalDescuento}>{promoSeleccionada.descuento}% de Descuento</Text>
+              )}
+
+              {codigoUso ? (
+                <View style={styles.cuponBox}>
+                  <Text style={styles.cuponLabel}>Tu código de uso:</Text>
+                  <Text style={styles.cuponTexto}>{codigoUso}</Text>
+                </View>
+              ) : (
+                <TouchableOpacity style={styles.botonGenerar} onPress={generarCodigo}>
+                  <Text style={styles.textoBotonGenerar}>
+                    {usuario ? 'Generar Código de Uso' : 'Iniciar sesión para obtener código'}
+                  </Text>
+                </TouchableOpacity>
+              )}
+
+              <TouchableOpacity 
+                style={styles.botonCerrar} 
+                onPress={() => setPromoSeleccionada(null)}
+              >
+                <Text style={styles.textoBotonCerrar}>Cerrar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, backgroundColor: '#121c18' },
-  containerComercio: { flex: 1, padding: 16, backgroundColor: '#121c18', justifyContent: 'center', alignItems: 'center' },
-  headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4, marginTop: 8 },
-  logoMarca: { fontSize: 24, fontWeight: 'bold', color: '#fff', letterSpacing: 0.5 },
+  safeArea: { flex: 1, backgroundColor: '#121c18' },
+  container: { flex: 1, paddingHorizontal: 16, backgroundColor: '#121c18' },
+  containerComercio: { flex: 1, paddingHorizontal: 16, backgroundColor: '#121c18', justifyContent: 'center', alignItems: 'center' },
+  
+  headerRow: { flexDirection: 'row', alignItems: 'center', marginTop: 12, marginBottom: 8 },
+  logoMarca: { fontSize: 26, fontWeight: 'bold', color: '#fff', letterSpacing: 0.5 },
   logoPunto: { color: '#ff6b35' },
+  
   titulo: { fontSize: 24, fontWeight: 'bold', color: '#fff', marginTop: 4 },
   subtitulo: { fontSize: 13, color: '#9ca3af', marginBottom: 16 },
   
@@ -247,24 +263,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#233d33',
   },
-  imagen: { width: '100%', height: 150 },
-  bannerPlaceholder: { 
-    width: '100%', 
-    height: 80, 
-    backgroundColor: '#1f3a30', 
-    justifyContent: 'center', 
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#2b5329',
-  },
-  bannerEtiqueta: { 
-    color: '#4ade80', 
-    fontSize: 14, 
-    fontWeight: 'bold', 
-    letterSpacing: 1,
-    textAlign: 'center',
-  },
+  imagen: { width: '100%', height: 160, backgroundColor: '#1f3a30' },
   contenidoCard: { padding: 16 },
   comercioNombre: { fontSize: 12, color: '#4ade80', fontWeight: '700', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 },
   promoTitulo: { fontSize: 17, fontWeight: 'bold', color: '#fff', marginBottom: 6 },
