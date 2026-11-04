@@ -1,3 +1,4 @@
+import { useAutenticacion } from '@/contextos/autenticacion'; // Importamos el contexto de autenticación
 import { obtenerPromociones } from '@/servicios/promociones';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Image, Modal, StyleSheet, Text, TouchableOpacity, Vibration, View } from 'react-native';
@@ -15,19 +16,26 @@ type PromocionType = {
 };
 
 export default function PromotionsScreen() {
+  // Obtenemos el usuario autenticado del contexto global
+  const { usuario } = useAutenticacion();
+  
+  // Determinamos el rol automáticamente: si el rol del usuario logueado es 'comercio'
+  const esComercio = usuario?.rol === 'comercio';
+
   const [promociones, setPromociones] = useState<PromocionType[]>([]);
   const [cargando, setCargando] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Estado para los filtros de vigencia requeridos
   const [filtroActivo, setFiltroActivo] = useState<'vigentes' | 'proximas' | 'vencer'>('vigentes');
-  
-  // Estados para detalle y cupón del vecino
   const [promoSeleccionada, setPromoSeleccionada] = useState<PromocionType | null>(null);
   const [codigoUso, setCodigoUso] = useState<string | null>(null);
 
+  // Estado para simular el escaneo exitoso en el comercio
+  const [cuponEscaneado, setCuponEscaneado] = useState<string | null>(null);
+
   useEffect(() => {
     async function cargarDatos() {
+      if (esComercio) return;
       try {
         setCargando(true);
         setError(null);
@@ -41,7 +49,7 @@ export default function PromotionsScreen() {
     }
 
     cargarDatos();
-  }, [filtroActivo]);
+  }, [filtroActivo, esComercio]);
 
   const generarCodigo = () => {
     Vibration.vibrate(100);
@@ -49,6 +57,44 @@ export default function PromotionsScreen() {
     setCodigoUso(`CCU-${aleatorio.slice(0, 4)}-${aleatorio.slice(4)}`);
   };
 
+  const simularEscaneoQR = () => {
+    // Vibración diferenciada al validar con éxito
+    Vibration.vibrate([0, 100, 50, 100]);
+    const codigoEjemplo = `CCU-PROMO-${Math.floor(1000 + Math.random() * 9000)}`;
+    setCuponEscaneado(codigoEjemplo);
+
+    setTimeout(() => {
+      setCuponEscaneado(null);
+    }, 3000);
+  };
+
+  // ==========================================
+  // VISTA 1: ROL COMERCIO (Panel de Validación)
+  // ==========================================
+  if (esComercio) {
+    return (
+      <View style={styles.containerComercio}>
+        <Text style={styles.titulo}>Panel de Validación</Text>
+        <Text style={styles.subtitulo}>Simulador de escáner QR de cupones para el comercio.</Text>
+
+        <TouchableOpacity style={styles.areaEscanerSimulado} onPress={simularEscaneoQR}>
+          <Text style={styles.textoEscanerInstruccion}>📷 Tocar aquí para simular escaneo de QR</Text>
+          <Text style={styles.textoEscanerSub}>El cliente presenta su código en pantalla</Text>
+        </TouchableOpacity>
+
+        {cuponEscaneado && (
+          <View style={styles.resultadoBox}>
+            <Text style={styles.textoResultado}>¡Cupón Validado con Éxito!</Text>
+            <Text style={styles.codigoEscaneado}>{cuponEscaneado}</Text>
+          </View>
+        )}
+      </View>
+    );
+  }
+
+  // ==========================================
+  // VISTA 2: ROL VECINO (Listado, Filtros y Cupones)
+  // ==========================================
   if (cargando) {
     return (
       <View style={styles.centrado}>
@@ -70,7 +116,6 @@ export default function PromotionsScreen() {
       <Text style={styles.titulo}>Promociones</Text>
       <Text style={styles.subtitulo}>Lo bueno de comprar cerca.</Text>
       
-      {/* Botones de filtro de vigencia */}
       <View style={styles.contenedorFiltros}>
         <TouchableOpacity 
           style={[styles.chipFiltro, filtroActivo === 'vigentes' && styles.chipActivo]}
@@ -121,7 +166,6 @@ export default function PromotionsScreen() {
         )}
       />
 
-      {/* Modal de Detalle y Cupón */}
       <Modal
         visible={promoSeleccionada !== null}
         animationType="slide"
@@ -163,8 +207,15 @@ export default function PromotionsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16, backgroundColor: '#fcf8f2' },
-  titulo: { fontSize: 26, fontWeight: 'bold', color: '#1a1a1a' },
+  containerComercio: { flex: 1, padding: 16, backgroundColor: '#fcf8f2', justifyContent: 'center', alignItems: 'center' },
+  titulo: { fontSize: 26, fontWeight: 'bold', color: '#1a1a1a', marginTop: 10 },
   subtitulo: { fontSize: 14, color: '#666', marginBottom: 12 },
+  areaEscanerSimulado: { width: '100%', height: 260, backgroundColor: '#1e293b', borderRadius: 16, justifyContent: 'center', alignItems: 'center', padding: 20, borderWidth: 2, borderColor: '#334155', borderStyle: 'dashed' },
+  textoEscanerInstruccion: { color: '#fff', fontSize: 16, fontWeight: 'bold', textAlign: 'center', marginBottom: 8 },
+  textoEscanerSub: { color: '#94a3b8', fontSize: 13, textAlign: 'center' },
+  resultadoBox: { marginTop: 20, backgroundColor: '#10b981', padding: 16, borderRadius: 12, alignItems: 'center', width: '100%' },
+  textoResultado: { color: '#fff', fontSize: 16, fontWeight: 'bold', marginBottom: 4 },
+  codigoEscaneado: { color: '#fff', fontSize: 15, letterSpacing: 1 },
   contenedorFiltros: { flexDirection: 'row', marginBottom: 16 },
   chipFiltro: { paddingVertical: 6, paddingHorizontal: 14, backgroundColor: '#e5e7eb', borderRadius: 20, marginRight: 8 },
   chipActivo: { backgroundColor: '#2b5329' },
