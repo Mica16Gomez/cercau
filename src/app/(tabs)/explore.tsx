@@ -1,5 +1,6 @@
-import { useAutenticacion } from '@/contextos/autenticacion'; // Importamos el contexto de autenticación
+import { useAutenticacion } from '@/contextos/autenticacion';
 import { obtenerPromociones } from '@/servicios/promociones';
+import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Image, Modal, StyleSheet, Text, TouchableOpacity, Vibration, View } from 'react-native';
 
@@ -16,10 +17,7 @@ type PromocionType = {
 };
 
 export default function PromotionsScreen() {
-  // Obtenemos el usuario autenticado del contexto global
   const { usuario } = useAutenticacion();
-  
-  // Determinamos el rol automáticamente: si el rol del usuario logueado es 'comercio'
   const esComercio = usuario?.rol === 'comercio';
 
   const [promociones, setPromociones] = useState<PromocionType[]>([]);
@@ -29,8 +27,6 @@ export default function PromotionsScreen() {
   const [filtroActivo, setFiltroActivo] = useState<'vigentes' | 'proximas' | 'vencer'>('vigentes');
   const [promoSeleccionada, setPromoSeleccionada] = useState<PromocionType | null>(null);
   const [codigoUso, setCodigoUso] = useState<string | null>(null);
-
-  // Estado para simular el escaneo exitoso en el comercio
   const [cuponEscaneado, setCuponEscaneado] = useState<string | null>(null);
 
   useEffect(() => {
@@ -52,13 +48,19 @@ export default function PromotionsScreen() {
   }, [filtroActivo, esComercio]);
 
   const generarCodigo = () => {
+    // REGLA DEL PRD: Si es visitante anónimo, lo mandamos a iniciar sesión para obtener el código
+    if (!usuario) {
+      setPromoSeleccionada(null);
+      router.push('/iniciar-sesion');
+      return;
+    }
+
     Vibration.vibrate(100);
     const aleatorio = Math.random().toString(36).substring(2, 8).toUpperCase();
     setCodigoUso(`CCU-${aleatorio.slice(0, 4)}-${aleatorio.slice(4)}`);
   };
 
   const simularEscaneoQR = () => {
-    // Vibración diferenciada al validar con éxito
     Vibration.vibrate([0, 100, 50, 100]);
     const codigoEjemplo = `CCU-PROMO-${Math.floor(1000 + Math.random() * 9000)}`;
     setCuponEscaneado(codigoEjemplo);
@@ -68,12 +70,12 @@ export default function PromotionsScreen() {
     }, 3000);
   };
 
-  // ==========================================
-  // VISTA 1: ROL COMERCIO (Panel de Validación)
-  // ==========================================
   if (esComercio) {
     return (
       <View style={styles.containerComercio}>
+        <View style={styles.headerRow}>
+          <Text style={styles.logoMarca}>Cercau<Text style={styles.logoPunto}>.</Text></Text>
+        </View>
         <Text style={styles.titulo}>Panel de Validación</Text>
         <Text style={styles.subtitulo}>Simulador de escáner QR de cupones para el comercio.</Text>
 
@@ -92,13 +94,10 @@ export default function PromotionsScreen() {
     );
   }
 
-  // ==========================================
-  // VISTA 2: ROL VECINO (Listado, Filtros y Cupones)
-  // ==========================================
   if (cargando) {
     return (
       <View style={styles.centrado}>
-        <ActivityIndicator size="large" color="#2b5329" />
+        <ActivityIndicator size="large" color="#e5e5e5" />
       </View>
     );
   }
@@ -113,6 +112,10 @@ export default function PromotionsScreen() {
 
   return (
     <View style={styles.container}>
+      <View style={styles.headerRow}>
+        <Text style={styles.logoMarca}>Cercau<Text style={styles.logoPunto}>.</Text></Text>
+      </View>
+
       <Text style={styles.titulo}>Promociones</Text>
       <Text style={styles.subtitulo}>Lo bueno de comprar cerca.</Text>
       
@@ -149,8 +152,15 @@ export default function PromotionsScreen() {
             }}
           >
             {item.imagenUrl && item.imagenUrl.startsWith('http') ? (
-              <Image source={{ uri: item.imagenUrl }} style={styles.imagen} />
-            ) : null}
+              <Image source={{ uri: item.imagenUrl }} style={styles.imagen} resizeMode="cover" />
+            ) : (
+              <View style={styles.bannerPlaceholder}>
+                <Text style={styles.bannerEtiqueta}>
+                  {item.descuento ? `✨ ${item.descuento}% DE DESCUENTO` : '🔥 PROMOCIÓN EXCLUSIVA'}
+                </Text>
+              </View>
+            )}
+            
             <View style={styles.contenidoCard}>
               <Text style={styles.comercioNombre}>
                 {item.comercio?.nombre || 'Comercio local'}
@@ -188,7 +198,9 @@ export default function PromotionsScreen() {
               </View>
             ) : (
               <TouchableOpacity style={styles.botonGenerar} onPress={generarCodigo}>
-                <Text style={styles.textoBotonGenerar}>Generar Código de Uso</Text>
+                <Text style={styles.textoBotonGenerar}>
+                  {usuario ? 'Generar Código de Uso' : 'Iniciar sesión para obtener código'}
+                </Text>
               </TouchableOpacity>
             )}
 
@@ -206,49 +218,71 @@ export default function PromotionsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, backgroundColor: '#fcf8f2' },
-  containerComercio: { flex: 1, padding: 16, backgroundColor: '#fcf8f2', justifyContent: 'center', alignItems: 'center' },
-  titulo: { fontSize: 26, fontWeight: 'bold', color: '#1a1a1a', marginTop: 10 },
-  subtitulo: { fontSize: 14, color: '#666', marginBottom: 12 },
-  areaEscanerSimulado: { width: '100%', height: 260, backgroundColor: '#1e293b', borderRadius: 16, justifyContent: 'center', alignItems: 'center', padding: 20, borderWidth: 2, borderColor: '#334155', borderStyle: 'dashed' },
+  container: { flex: 1, padding: 16, backgroundColor: '#121c18' },
+  containerComercio: { flex: 1, padding: 16, backgroundColor: '#121c18', justifyContent: 'center', alignItems: 'center' },
+  headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4, marginTop: 8 },
+  logoMarca: { fontSize: 24, fontWeight: 'bold', color: '#fff', letterSpacing: 0.5 },
+  logoPunto: { color: '#ff6b35' },
+  titulo: { fontSize: 24, fontWeight: 'bold', color: '#fff', marginTop: 4 },
+  subtitulo: { fontSize: 13, color: '#9ca3af', marginBottom: 16 },
+  
+  areaEscanerSimulado: { width: '100%', height: 260, backgroundColor: '#1a2e26', borderRadius: 16, justifyContent: 'center', alignItems: 'center', padding: 20, borderWidth: 2, borderColor: '#2b5329', borderStyle: 'dashed' },
   textoEscanerInstruccion: { color: '#fff', fontSize: 16, fontWeight: 'bold', textAlign: 'center', marginBottom: 8 },
-  textoEscanerSub: { color: '#94a3b8', fontSize: 13, textAlign: 'center' },
+  textoEscanerSub: { color: '#9ca3af', fontSize: 13, textAlign: 'center' },
   resultadoBox: { marginTop: 20, backgroundColor: '#10b981', padding: 16, borderRadius: 12, alignItems: 'center', width: '100%' },
   textoResultado: { color: '#fff', fontSize: 16, fontWeight: 'bold', marginBottom: 4 },
   codigoEscaneado: { color: '#fff', fontSize: 15, letterSpacing: 1 },
+
   contenedorFiltros: { flexDirection: 'row', marginBottom: 16 },
-  chipFiltro: { paddingVertical: 6, paddingHorizontal: 14, backgroundColor: '#e5e7eb', borderRadius: 20, marginRight: 8 },
-  chipActivo: { backgroundColor: '#2b5329' },
-  textoChip: { fontSize: 13, color: '#4b5563', fontWeight: '600' },
+  chipFiltro: { paddingVertical: 6, paddingHorizontal: 14, backgroundColor: '#1a2e26', borderRadius: 20, marginRight: 8, borderWidth: 1, borderColor: '#2b5329' },
+  chipActivo: { backgroundColor: '#2b5329', borderColor: '#4ade80' },
+  textoChip: { fontSize: 13, color: '#9ca3af', fontWeight: '600' },
   textoChipActivo: { color: '#fff' },
+
   card: { 
-    backgroundColor: '#fff', 
-    borderRadius: 12, 
+    backgroundColor: '#1a2e26', 
+    borderRadius: 16, 
     marginBottom: 16, 
     overflow: 'hidden',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
+    borderWidth: 1,
+    borderColor: '#233d33',
   },
-  imagen: { width: '100%', height: 140 },
+  imagen: { width: '100%', height: 150 },
+  bannerPlaceholder: { 
+    width: '100%', 
+    height: 80, 
+    backgroundColor: '#1f3a30', 
+    justifyContent: 'center', 
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#2b5329',
+  },
+  bannerEtiqueta: { 
+    color: '#4ade80', 
+    fontSize: 14, 
+    fontWeight: 'bold', 
+    letterSpacing: 1,
+    textAlign: 'center',
+  },
   contenidoCard: { padding: 16 },
-  comercioNombre: { fontSize: 13, color: '#2b5329', fontWeight: '600', marginBottom: 4 },
-  promoTitulo: { fontSize: 18, fontWeight: 'bold', color: '#1a1a1a', marginBottom: 6 },
-  descuentoText: { fontSize: 14, color: '#d97706', fontWeight: '600' },
-  centrado: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  error: { color: 'red', fontSize: 16 },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 },
-  modalContent: { backgroundColor: '#fff', width: '100%', borderRadius: 16, padding: 24, alignItems: 'center' },
-  modalComercio: { fontSize: 14, color: '#2b5329', fontWeight: '600', marginBottom: 8 },
-  modalTitulo: { fontSize: 20, fontWeight: 'bold', textAlign: 'center', marginBottom: 12, color: '#1a1a1a' },
-  modalDescuento: { fontSize: 16, color: '#d97706', fontWeight: 'bold', marginBottom: 20 },
+  comercioNombre: { fontSize: 12, color: '#4ade80', fontWeight: '700', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 },
+  promoTitulo: { fontSize: 17, fontWeight: 'bold', color: '#fff', marginBottom: 6 },
+  descuentoText: { fontSize: 13, color: '#fbbf24', fontWeight: '600' },
+
+  centrado: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#121c18' },
+  error: { color: '#f87171', fontSize: 16 },
+
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+  modalContent: { backgroundColor: '#1a2e26', width: '100%', borderRadius: 16, padding: 24, alignItems: 'center', borderWidth: 1, borderColor: '#2b5329' },
+  modalComercio: { fontSize: 13, color: '#4ade80', fontWeight: '600', marginBottom: 8, textTransform: 'uppercase' },
+  modalTitulo: { fontSize: 20, fontWeight: 'bold', textAlign: 'center', marginBottom: 12, color: '#fff' },
+  modalDescuento: { fontSize: 16, color: '#fbbf24', fontWeight: 'bold', marginBottom: 20 },
   botonGenerar: { backgroundColor: '#2b5329', paddingVertical: 12, paddingHorizontal: 24, borderRadius: 8, width: '100%', alignItems: 'center', marginBottom: 12 },
-  textoBotonGenerar: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-  cuponBox: { backgroundColor: '#f3f4f6', padding: 16, borderRadius: 8, width: '100%', alignItems: 'center', marginBottom: 12, borderWidth: 1, borderColor: '#d1d5db', borderStyle: 'dashed' },
-  cuponLabel: { fontSize: 12, color: '#4b5563', marginBottom: 4 },
-  cuponTexto: { fontSize: 20, fontWeight: 'bold', color: '#1f2937', letterSpacing: 2 },
+  textoBotonGenerar: { color: '#fff', fontSize: 15, fontWeight: 'bold' },
+  cuponBox: { backgroundColor: '#121c18', padding: 16, borderRadius: 8, width: '100%', alignItems: 'center', marginBottom: 12, borderWidth: 1, borderColor: '#4ade80', borderStyle: 'dashed' },
+  cuponLabel: { fontSize: 12, color: '#9ca3af', marginBottom: 4 },
+  cuponTexto: { fontSize: 20, fontWeight: 'bold', color: '#fff', letterSpacing: 2 },
   botonCerrar: { paddingVertical: 8, width: '100%', alignItems: 'center' },
-  textoBotonCerrar: { color: '#666', fontSize: 15, fontWeight: '600' }
+  textoBotonCerrar: { color: '#9ca3af', fontSize: 15, fontWeight: '600' }
 });
