@@ -2,17 +2,17 @@ import { useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { BusinessCard } from '@/components/business-card';
 import { EnlaceCuenta, MensajeError } from '@/components/autenticacion/controles';
+import { BusinessCard } from '@/components/business-card';
 import { EncabezadoBuscar, EncabezadoComercios } from '@/components/encabezado-buscar';
-import { LogoCercau } from '@/components/logo-cercau';
 import { CategoryChip, EstadoInterfaz, SearchField } from '@/components/interfaz';
+import { LogoCercau } from '@/components/logo-cercau';
 import { ThemedText } from '@/components/themed-text';
 import { useAutenticacion } from '@/contextos/autenticacion';
 import { useConsulta } from '@/hooks/use-consulta';
 import { useFavoritos } from '@/hooks/use-favoritos';
-import { buscarComercios, obtenerCategorias } from '@/servicios/comercios';
 import { useTheme } from '@/hooks/use-theme';
+import { buscarComercios, obtenerCategorias } from '@/servicios/comercios';
 
 export default function SearchScreen() {
   const theme = useTheme();

@@ -1,4 +1,5 @@
 import { useAutenticacion } from '@/contextos/autenticacion';
+import { useTheme } from '@/hooks/use-theme';
 import { obtenerPromociones } from '@/servicios/promociones';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -10,7 +11,7 @@ type PromocionType = {
   titulo?: string;
   descripcion?: string;
   descuento?: number;
-  imagenUrl?: string;
+  imagenUrl?: string | null;
   comercio?: {
     nombre: string;
     categoria?: string;
@@ -25,6 +26,7 @@ const fotosFallback = [
 ];
 
 export default function PromotionsScreen() {
+  const tema = useTheme();
   const { usuario } = useAutenticacion();
   const esComercio = usuario?.rol === 'comercio';
 
@@ -79,12 +81,12 @@ export default function PromotionsScreen() {
 
   if (esComercio) {
     return (
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.containerComercio}>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: tema.background }]}>
+        <View style={[styles.containerComercio, { backgroundColor: tema.background }]}>
           <View style={styles.headerRow}>
-            <Text style={styles.logoMarca}>Cercau<Text style={styles.logoPunto}>.</Text></Text>
+            <Text style={[styles.logoMarca, { color: tema.text }]}>Cercau<Text style={styles.logoPunto}>.</Text></Text>
           </View>
-          <Text style={styles.titulo}>Panel de Validación</Text>
+          <Text style={[styles.titulo, { color: tema.text }]}>Panel de Validación</Text>
           <Text style={styles.subtitulo}>Simulador de escáner QR de cupones para el comercio.</Text>
 
           <TouchableOpacity style={styles.areaEscanerSimulado} onPress={simularEscaneoQR}>
@@ -105,9 +107,9 @@ export default function PromotionsScreen() {
 
   if (cargando) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: tema.background }]}>
         <View style={styles.centrado}>
-          <ActivityIndicator size="large" color="#4ade80" />
+          <ActivityIndicator size="large" color="#2b5329" />
         </View>
       </SafeAreaView>
     );
@@ -115,7 +117,7 @@ export default function PromotionsScreen() {
 
   if (error) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: tema.background }]}>
         <View style={styles.centrado}>
           <Text style={styles.error}>{error}</Text>
         </View>
@@ -124,13 +126,13 @@ export default function PromotionsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-      <View style={styles.container}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: tema.background }]} edges={['top', 'left', 'right']}>
+      <View style={[styles.container, { backgroundColor: tema.background }]}>
         <View style={styles.headerRow}>
-          <Text style={styles.logoMarca}>Cercau<Text style={styles.logoPunto}>.</Text></Text>
+          <Text style={[styles.logoMarca, { color: tema.text }]}>Cercau<Text style={styles.logoPunto}>.</Text></Text>
         </View>
 
-        <Text style={styles.titulo}>Promociones</Text>
+        <Text style={[styles.titulo, { color: tema.text }]}>Promociones</Text>
         <Text style={styles.subtitulo}>Lo bueno de comprar cerca.</Text>
         
         <View style={styles.contenedorFiltros}>
@@ -158,13 +160,14 @@ export default function PromotionsScreen() {
           data={promociones}
           keyExtractor={(item, index) => item.id || index.toString()}
           renderItem={({ item, index }) => {
-            // Verificamos si la imagen del item es una URL real y válida en texto
-            const esUrlValida = item.imagenUrl && typeof item.imagenUrl === 'string' && item.imagenUrl.startsWith('http');
-            const imagenAMostrar = esUrlValida ? item.imagenUrl : fotosFallback[index % fotosFallback.length];
+            
+            const imagenAMostrar = (item.imagenUrl && typeof item.imagenUrl === 'string' && item.imagenUrl.startsWith('http'))
+              ? item.imagenUrl
+              : fotosFallback[index % fotosFallback.length];
 
             return (
               <TouchableOpacity 
-                style={styles.card} 
+                style={[styles.card, { backgroundColor: '#ffffff', borderColor: '#e5e7eb' }]} 
                 onPress={() => {
                   setPromoSeleccionada(item);
                   setCodigoUso(null);
@@ -231,18 +234,18 @@ export default function PromotionsScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#121c18' },
-  container: { flex: 1, paddingHorizontal: 16, backgroundColor: '#121c18' },
-  containerComercio: { flex: 1, paddingHorizontal: 16, backgroundColor: '#121c18', justifyContent: 'center', alignItems: 'center' },
+  safeArea: { flex: 1 },
+  container: { flex: 1, paddingHorizontal: 16 },
+  containerComercio: { flex: 1, paddingHorizontal: 16, justifyContent: 'center', alignItems: 'center' },
   
   headerRow: { flexDirection: 'row', alignItems: 'center', marginTop: 12, marginBottom: 8 },
-  logoMarca: { fontSize: 26, fontWeight: 'bold', color: '#fff', letterSpacing: 0.5 },
+  logoMarca: { fontSize: 26, fontWeight: 'bold', letterSpacing: 0.5 },
   logoPunto: { color: '#ff6b35' },
   
-  titulo: { fontSize: 24, fontWeight: 'bold', color: '#fff', marginTop: 4 },
-  subtitulo: { fontSize: 13, color: '#9ca3af', marginBottom: 16 },
+  titulo: { fontSize: 24, fontWeight: 'bold', marginTop: 4 },
+  subtitulo: { fontSize: 13, color: '#666', marginBottom: 16 },
   
-  areaEscanerSimulado: { width: '100%', height: 260, backgroundColor: '#1a2e26', borderRadius: 16, justifyContent: 'center', alignItems: 'center', padding: 20, borderWidth: 2, borderColor: '#2b5329', borderStyle: 'dashed' },
+  areaEscanerSimulado: { width: '100%', height: 260, backgroundColor: '#1e293b', borderRadius: 16, justifyContent: 'center', alignItems: 'center', padding: 20, borderWidth: 2, borderColor: '#334155', borderStyle: 'dashed' },
   textoEscanerInstruccion: { color: '#fff', fontSize: 16, fontWeight: 'bold', textAlign: 'center', marginBottom: 8 },
   textoEscanerSub: { color: '#9ca3af', fontSize: 13, textAlign: 'center' },
   resultadoBox: { marginTop: 20, backgroundColor: '#10b981', padding: 16, borderRadius: 12, alignItems: 'center', width: '100%' },
@@ -250,38 +253,41 @@ const styles = StyleSheet.create({
   codigoEscaneado: { color: '#fff', fontSize: 15, letterSpacing: 1 },
 
   contenedorFiltros: { flexDirection: 'row', marginBottom: 16 },
-  chipFiltro: { paddingVertical: 6, paddingHorizontal: 14, backgroundColor: '#1a2e26', borderRadius: 20, marginRight: 8, borderWidth: 1, borderColor: '#2b5329' },
-  chipActivo: { backgroundColor: '#2b5329', borderColor: '#4ade80' },
-  textoChip: { fontSize: 13, color: '#9ca3af', fontWeight: '600' },
+  chipFiltro: { paddingVertical: 6, paddingHorizontal: 14, backgroundColor: '#e5e7eb', borderRadius: 20, marginRight: 8 },
+  chipActivo: { backgroundColor: '#2b5329' },
+  textoChip: { fontSize: 13, color: '#4b5563', fontWeight: '600' },
   textoChipActivo: { color: '#fff' },
 
   card: { 
-    backgroundColor: '#1a2e26', 
     borderRadius: 16, 
     marginBottom: 16, 
     overflow: 'hidden',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
     borderWidth: 1,
-    borderColor: '#233d33',
   },
-  imagen: { width: '100%', height: 160, backgroundColor: '#1f3a30' },
+  imagen: { width: '100%', height: 160 },
   contenidoCard: { padding: 16 },
-  comercioNombre: { fontSize: 12, color: '#4ade80', fontWeight: '700', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 },
-  promoTitulo: { fontSize: 17, fontWeight: 'bold', color: '#fff', marginBottom: 6 },
-  descuentoText: { fontSize: 13, color: '#fbbf24', fontWeight: '600' },
+  comercioNombre: { fontSize: 12, color: '#2b5329', fontWeight: '700', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 },
+  promoTitulo: { fontSize: 17, fontWeight: 'bold', color: '#1a1a1a', marginBottom: 6 },
+  descuentoText: { fontSize: 13, color: '#d97706', fontWeight: '600' },
 
-  centrado: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#121c18' },
-  error: { color: '#f87171', fontSize: 16 },
+  centrado: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  error: { color: 'red', fontSize: 16 },
 
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', padding: 20 },
-  modalContent: { backgroundColor: '#1a2e26', width: '100%', borderRadius: 16, padding: 24, alignItems: 'center', borderWidth: 1, borderColor: '#2b5329' },
-  modalComercio: { fontSize: 13, color: '#4ade80', fontWeight: '600', marginBottom: 8, textTransform: 'uppercase' },
-  modalTitulo: { fontSize: 20, fontWeight: 'bold', textAlign: 'center', marginBottom: 12, color: '#fff' },
-  modalDescuento: { fontSize: 16, color: '#fbbf24', fontWeight: 'bold', marginBottom: 20 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+  modalContent: { backgroundColor: '#fff', width: '100%', borderRadius: 16, padding: 24, alignItems: 'center' },
+  modalComercio: { fontSize: 13, color: '#2b5329', fontWeight: '600', marginBottom: 8, textTransform: 'uppercase' },
+  modalTitulo: { fontSize: 20, fontWeight: 'bold', textAlign: 'center', marginBottom: 12, color: '#1a1a1a' },
+  modalDescuento: { fontSize: 16, color: '#d97706', fontWeight: 'bold', marginBottom: 20 },
   botonGenerar: { backgroundColor: '#2b5329', paddingVertical: 12, paddingHorizontal: 24, borderRadius: 8, width: '100%', alignItems: 'center', marginBottom: 12 },
   textoBotonGenerar: { color: '#fff', fontSize: 15, fontWeight: 'bold' },
-  cuponBox: { backgroundColor: '#121c18', padding: 16, borderRadius: 8, width: '100%', alignItems: 'center', marginBottom: 12, borderWidth: 1, borderColor: '#4ade80', borderStyle: 'dashed' },
-  cuponLabel: { fontSize: 12, color: '#9ca3af', marginBottom: 4 },
-  cuponTexto: { fontSize: 20, fontWeight: 'bold', color: '#fff', letterSpacing: 2 },
+  cuponBox: { backgroundColor: '#f3f4f6', padding: 16, borderRadius: 8, width: '100%', alignItems: 'center', marginBottom: 12, borderWidth: 1, borderColor: '#d1d5db', borderStyle: 'dashed' },
+  cuponLabel: { fontSize: 12, color: '#4b5563', marginBottom: 4 },
+  cuponTexto: { fontSize: 20, fontWeight: 'bold', color: '#1f2937', letterSpacing: 2 },
   botonCerrar: { paddingVertical: 8, width: '100%', alignItems: 'center' },
-  textoBotonCerrar: { color: '#9ca3af', fontSize: 15, fontWeight: '600' }
+  textoBotonCerrar: { color: '#666', fontSize: 15, fontWeight: '600' }
 });

@@ -6,8 +6,15 @@ export async function obtenerPromociones(estado = 'vigentes') {
     const respuesta = await fetch(`${API_URL}/promociones?estado=${estado}`);
     const resultado = await respuesta.json();
     
-    
-    return resultado.datos || [];
+    const datosCrudos = resultado.datos || [];
+
+    // Limpiamos y saneamos las URLs de las imágenes para evitar elementos rotos
+    return datosCrudos.map((promo: any) => ({
+      ...promo,
+      imagenUrl: (promo.imagenUrl && typeof promo.imagenUrl === 'string' && promo.imagenUrl.startsWith('http')) 
+        ? promo.imagenUrl 
+        : null 
+    }));
   } catch (error) {
     console.error("Error al obtener promociones:", error);
     throw error;
