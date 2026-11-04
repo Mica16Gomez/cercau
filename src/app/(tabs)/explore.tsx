@@ -2,9 +2,10 @@ import { LogoCercau } from '@/components/logo-cercau';
 import { useAutenticacion } from '@/contextos/autenticacion';
 import { useTheme } from '@/hooks/use-theme';
 import { obtenerPromociones } from '@/servicios/promociones';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, Vibration, View } from 'react-native';
+import { ActivityIndicator, Button, FlatList, Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, Vibration, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 type PromocionType = {
@@ -38,6 +39,9 @@ export default function PromotionsScreen() {
   const [filtroActivo, setFiltroActivo] = useState<'vigentes' | 'proximas' | 'vencer'>('vigentes');
   const [promoSeleccionada, setPromoSeleccionada] = useState<PromocionType | null>(null);
   const [codigoUso, setCodigoUso] = useState<string | null>(null);
+  
+  const [permisoCamara, solicitarPermisoCamara] = useCameraPermissions();
+  const [escaneandoReal, setEscanerActivo] = useState<boolean>(false);
   const [cuponEscaneado, setCuponEscaneado] = useState<string | null>(null);
 
   useEffect(() => {
@@ -70,17 +74,33 @@ export default function PromotionsScreen() {
     setCodigoUso(`CCU-${aleatorio.slice(0, 4)}-${aleatorio.slice(4)}`);
   };
 
-  const simularEscaneoQR = () => {
-    Vibration.vibrate([0, 100, 50, 100]);
-    const codigoEjemplo = `CCU-PROMO-${Math.floor(1000 + Math.random() * 9000)}`;
-    setCuponEscaneado(codigoEjemplo);
-
-    setTimeout(() => {
-      setCuponEscaneado(null);
-    }, 3000);
+  const manejarEscaneoQR = ({ data }: { data: string }) => {
+    if (data) {
+      Vibration.vibrate([0, 100, 50, 100]);
+      setCuponEscaneado(data);
+      setEscanerActivo(false);
+    }
   };
 
   if (esComercio) {
+    if (!permisoCamara) {
+      return <View style={styles.centrado}><ActivityIndicator size="large" color="#2b5329" /></View>;
+    }
+
+    if (!permisoCamara.granted) {
+      return (
+        <SafeAreaView style={[styles.safeArea, { backgroundColor: tema.background }]}>
+          <View style={[styles.containerComercio, { backgroundColor: tema.background, justifyContent: 'center', alignItems: 'center' }]}>
+            <Text style={[styles.titulo, { color: tema.text, textAlign: 'center' }]}>Permiso de Cámara Requerido</Text>
+            <Text style={[styles.subtituloDinamico, { color: tema.text, textAlign: 'center', marginBottom: 20 }]}>
+              Necesitamos acceso a la cámara para que el comercio pueda escanear los códigos QR de los clientes.
+            </Text>
+            <Button title="Conceder Permiso" onPress={solicitarPermisoCamara} color="#2b5329" />
+          </View>
+        </SafeAreaView>
+      );
+    }
+
     return (
       <SafeAreaView style={[styles.safeArea, { backgroundColor: tema.background }]} edges={['top', 'left', 'right']}>
         <ScrollView contentContainerStyle={[styles.containerComercio, { backgroundColor: tema.background }]}>
@@ -91,14 +111,27 @@ export default function PromotionsScreen() {
           <View style={styles.infoPanelBox}>
             <Text style={[styles.titulo, { color: tema.text }]}>Panel de Comercio</Text>
             <Text style={[styles.subtituloDinamico, { color: tema.text, opacity: 0.7 }]}>
-              Validación de cupones y escáner activo de códigos del cliente.
+              Escáner activo con cámara nativa para validar cupones de clientes.
             </Text>
 
-            <TouchableOpacity style={styles.areaEscanerSimulado} onPress={simularEscaneoQR} activeOpacity={0.8}>
-              <Text style={styles.iconoEscaner}>📷</Text>
-              <Text style={styles.textoEscanerInstruccion}>Escanear Código QR del Cliente</Text>
-              <Text style={styles.textoEscanerSub}>Tocar para procesar validación de promoción</Text>
-            </TouchableOpacity>
+            {escaneandoReal ? (
+              <View style={styles.camaraContenedorFijo}>
+                <CameraView
+                  style={StyleSheet.absoluteFill}
+                  onBarcodeScanned={manejarEscaneoQR}
+                  barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
+                />
+                <TouchableOpacity style={styles.botonCerrarCamara} onPress={() => setEscanerActivo(false)}>
+                  <Text style={styles.textoBotonCerrarCamara}>✕ Cancelar Escaneo</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity style={styles.areaEscanerReal} onPress={() => setEscanerActivo(true)} activeOpacity={0.8}>
+                <Text style={styles.iconoEscaner}>📷</Text>
+                <Text style={styles.textoEscanerInstruccion}>Abrir Cámara para Escanear QR</Text>
+                <Text style={styles.textoEscanerSub}>Tocar para iniciar la lectura del código del cliente</Text>
+              </TouchableOpacity>
+            )}
 
             {cuponEscaneado && (
               <View style={styles.resultadoBox}>
@@ -215,7 +248,6 @@ export default function PromotionsScreen() {
               {codigoUso ? (
                 <View style={styles.cuponBox}>
                   <Text style={styles.cuponLabel}>Presentá este código QR en el comercio:</Text>
-                  {/* Generador de QR automático mediante imagen */}
                   <Image 
                     source={{ uri: `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${codigoUso}` }} 
                     style={styles.imagenQr} 
@@ -255,7 +287,11 @@ const styles = StyleSheet.create({
   titulo: { fontSize: 24, fontWeight: 'bold', marginTop: 4 },
   subtituloDinamico: { fontSize: 13, marginBottom: 20 },
   
-  areaEscanerSimulado: { width: '100%', backgroundColor: '#2b5329', borderRadius: 16, justifyContent: 'center', alignItems: 'center', padding: 28, elevation: 4 },
+  areaEscanerReal: { width: '100%', backgroundColor: '#2b5329', borderRadius: 16, justifyContent: 'center', alignItems: 'center', padding: 28, elevation: 4 },
+  camaraContenedorFijo: { width: '100%', height: 400, borderRadius: 16, overflow: 'hidden', position: 'relative', marginTop: 8 },
+  botonCerrarCamara: { position: 'absolute', bottom: 16, alignSelf: 'center', backgroundColor: 'rgba(0,0,0,0.8)', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 20 },
+  textoBotonCerrarCamara: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
+
   iconoEscaner: { fontSize: 32, marginBottom: 8 },
   textoEscanerInstruccion: { color: '#fff', fontSize: 17, fontWeight: 'bold', textAlign: 'center', marginBottom: 6 },
   textoEscanerSub: { color: '#d1d5db', fontSize: 13, textAlign: 'center' },
