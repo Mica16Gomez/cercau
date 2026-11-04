@@ -1,3 +1,4 @@
+import { LogoCercau } from '@/components/logo-cercau'; // Importamos el componente de logo de la app
 import { useAutenticacion } from '@/contextos/autenticacion';
 import { useTheme } from '@/hooks/use-theme';
 import { obtenerPromociones } from '@/servicios/promociones';
@@ -84,7 +85,7 @@ export default function PromotionsScreen() {
       <SafeAreaView style={[styles.safeArea, { backgroundColor: tema.background }]}>
         <View style={[styles.containerComercio, { backgroundColor: tema.background }]}>
           <View style={styles.headerRow}>
-            <Text style={[styles.logoMarca, { color: tema.text }]}>Cercau<Text style={styles.logoPunto}>.</Text></Text>
+            <LogoCercau variante="claro" />
           </View>
           <Text style={[styles.titulo, { color: tema.text }]}>Panel de Validación</Text>
           <Text style={styles.subtitulo}>Simulador de escáner QR de cupones para el comercio.</Text>
@@ -129,7 +130,7 @@ export default function PromotionsScreen() {
     <SafeAreaView style={[styles.safeArea, { backgroundColor: tema.background }]} edges={['top', 'left', 'right']}>
       <View style={[styles.container, { backgroundColor: tema.background }]}>
         <View style={styles.headerRow}>
-          <Text style={[styles.logoMarca, { color: tema.text }]}>Cercau<Text style={styles.logoPunto}>.</Text></Text>
+          <LogoCercau variante="claro" />
         </View>
 
         <Text style={[styles.titulo, { color: tema.text }]}>Promociones</Text>
@@ -160,7 +161,6 @@ export default function PromotionsScreen() {
           data={promociones}
           keyExtractor={(item, index) => item.id || index.toString()}
           renderItem={({ item, index }) => {
-            
             const imagenAMostrar = (item.imagenUrl && typeof item.imagenUrl === 'string' && item.imagenUrl.startsWith('http'))
               ? item.imagenUrl
               : fotosFallback[index % fotosFallback.length];
@@ -239,15 +239,13 @@ const styles = StyleSheet.create({
   containerComercio: { flex: 1, paddingHorizontal: 16, justifyContent: 'center', alignItems: 'center' },
   
   headerRow: { flexDirection: 'row', alignItems: 'center', marginTop: 12, marginBottom: 8 },
-  logoMarca: { fontSize: 26, fontWeight: 'bold', letterSpacing: 0.5 },
-  logoPunto: { color: '#ff6b35' },
   
   titulo: { fontSize: 24, fontWeight: 'bold', marginTop: 4 },
   subtitulo: { fontSize: 13, color: '#666', marginBottom: 16 },
   
   areaEscanerSimulado: { width: '100%', height: 260, backgroundColor: '#1e293b', borderRadius: 16, justifyContent: 'center', alignItems: 'center', padding: 20, borderWidth: 2, borderColor: '#334155', borderStyle: 'dashed' },
   textoEscanerInstruccion: { color: '#fff', fontSize: 16, fontWeight: 'bold', textAlign: 'center', marginBottom: 8 },
-  textoEscanerSub: { color: '#9ca3af', fontSize: 13, textAlign: 'center' },
+  textoEscanerSub: { color: '#94a3b8', fontSize: 13, textAlign: 'center' },
   resultadoBox: { marginTop: 20, backgroundColor: '#10b981', padding: 16, borderRadius: 12, alignItems: 'center', width: '100%' },
   textoResultado: { color: '#fff', fontSize: 16, fontWeight: 'bold', marginBottom: 4 },
   codigoEscaneado: { color: '#fff', fontSize: 15, letterSpacing: 1 },
