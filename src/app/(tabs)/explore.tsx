@@ -185,7 +185,6 @@ export default function PromotionsScreen() {
                   <Text style={styles.comercioNombre}>
                     {item.comercio?.nombre || 'Comercio local'}
                   </Text>
-                  {/* Forzamos color oscuro para que contraste perfecto con el fondo blanco de la tarjeta */}
                   <Text style={[styles.promoTitulo, { color: '#1a1a1a' }]}>
                     {item.titulo || item.descripcion}
                   </Text>
@@ -215,13 +214,18 @@ export default function PromotionsScreen() {
 
               {codigoUso ? (
                 <View style={styles.cuponBox}>
-                  <Text style={styles.cuponLabel}>Tu código de uso:</Text>
+                  <Text style={styles.cuponLabel}>Presentá este código QR en el comercio:</Text>
+                  {/* Generador de QR automático mediante imagen */}
+                  <Image 
+                    source={{ uri: `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${codigoUso}` }} 
+                    style={styles.imagenQr} 
+                  />
                   <Text style={styles.cuponTexto}>{codigoUso}</Text>
                 </View>
               ) : (
                 <TouchableOpacity style={styles.botonGenerar} onPress={generarCodigo}>
                   <Text style={styles.textoBotonGenerar}>
-                    {usuario ? 'Generar Código de Uso' : 'Iniciar sesión para obtener código'}
+                    {usuario ? 'Generar Código QR' : 'Iniciar sesión para obtener código'}
                   </Text>
                 </TouchableOpacity>
               )}
@@ -293,8 +297,9 @@ const styles = StyleSheet.create({
   botonGenerar: { backgroundColor: '#2b5329', paddingVertical: 12, paddingHorizontal: 24, borderRadius: 8, width: '100%', alignItems: 'center', marginBottom: 12 },
   textoBotonGenerar: { color: '#fff', fontSize: 15, fontWeight: 'bold' },
   cuponBox: { backgroundColor: '#f3f4f6', padding: 16, borderRadius: 8, width: '100%', alignItems: 'center', marginBottom: 12, borderWidth: 1, borderColor: '#d1d5db', borderStyle: 'dashed' },
-  cuponLabel: { fontSize: 12, color: '#4b5563', marginBottom: 4 },
-  cuponTexto: { fontSize: 20, fontWeight: 'bold', letterSpacing: 2, color: '#1f2937' },
+  cuponLabel: { fontSize: 12, color: '#4b5563', marginBottom: 6, textAlign: 'center' },
+  imagenQr: { width: 150, height: 150, marginVertical: 8, borderRadius: 8 },
+  cuponTexto: { fontSize: 16, fontWeight: 'bold', letterSpacing: 1.5, color: '#1f2937', marginTop: 4 },
   botonCerrar: { paddingVertical: 8, width: '100%', alignItems: 'center' },
   textoBotonCerrar: { fontSize: 15, fontWeight: '600' }
 });
