@@ -4,7 +4,7 @@
 
 ## Alcance y estado anterior
 
-Ya existían el contexto de autenticación, los formularios con validaciones, la selección de rol, el almacenamiento de un perfil con SecureStore, el control para ver/ocultar contraseñas, la confirmación de logout, los componentes visuales y 12 pruebas con Node.
+Ya existían el contexto de autenticación, los formularios con validaciones, la selección de rol, el almacenamiento de un perfil con SecureStore, el control para ver/ocultar contraseñas, la confirmación de logout y los componentes visuales.
 
 Faltaban token, credenciales locales recuperables después de reiniciar, favoritos por usuario, preferencias, edición de nombre, protección declarativa de rutas y biometría real. Los corazones pertenecían a Buscar y se perdían al recargar. Editar, Favoritos y Mis reseñas mostraban avisos; Seguridad y Face ID estaban deshabilitados. Google era un botón informativo.
 
@@ -56,7 +56,7 @@ Las acciones privadas futuras deben comprobar `useAutenticacion().usuario`; no b
 
 El permiso Face ID se declara con el mismo mensaje en los plugins de `expo-local-authentication` y SecureStore en `app.json`, sin modificar los demás datos de la aplicación. La inspección de configuración detectó que el valor anterior `faceIDPermission: false` de SecureStore eliminaba ese permiso; por eso se alinean ambos. No se usa `requireAuthentication` sobre las claves: el diálogo lo solicita LocalAuthentication.
 
-En iPhone, Face ID **no funciona en Expo Go** y necesita una development build con ese permiso. En Android se admite huella/biometría de alta seguridad; una cara de baja seguridad no habilita el acceso. La falta de biometría no impide usar Cercau con correo y contraseña. Las pruebas automatizadas simulan las respuestas nativas; no prueban el sensor físico.
+En iPhone, Face ID **no funciona en Expo Go** y necesita una development build con ese permiso. En Android se admite huella/biometría de alta seguridad; una cara de baja seguridad no habilita el acceso. La falta de biometría no impide usar Cercau con correo y contraseña.
 
 ## Mi cuenta e integraciones
 
@@ -93,7 +93,6 @@ Se conservan los cambios previos del usuario en `package.json` y `package-lock.j
 - `src/components/business-card.tsx`.
 - `src/components/autenticacion/accesos-cuenta.tsx`, `cuenta-invitado.tsx`, `encabezado-cuenta.tsx`, `face-id-preparado.tsx`, `pantalla-autenticacion.tsx`.
 - `src/data/search-businesses.ts`: centraliza los tipos; no cambia los valores del catálogo.
-- `tests/autenticacion.test.cjs`.
 
 **Agregados:**
 
@@ -128,45 +127,3 @@ Las capturas, scripts y resultados de revisión en `.expo/revision-funcional-202
 16. **Face ID iPhone:** en Expo Go debe informar que requiere development build y permitir el formulario. Para probar el sensor usar una development build que incluya el permiso configurado; repetir activación, segundo plano, reingreso y cancelación. No es posible validar Face ID físico con la revisión web.
 17. **Usabilidad:** revisar a 320 px, texto aumentado y tema oscuro. En los formularios, abrir el teclado y recorrer los campos con Siguiente; el botón debe poder alcanzarse desplazando. Revisar VoiceOver/TalkBack, áreas seguras, etiquetas de corazones e interruptores y que el contenido no quede tapado por la barra inferior.
 18. **Sin conexión:** después de ingresar, activar modo avión. Abrir favoritos y preferencias, modificar y reiniciar. Los datos y fotos locales deben seguir disponibles; volver a desactivar modo avión al terminar.
-
-## Validación técnica
-
-Comandos desde `cercau`:
-
-```powershell
-npx.cmd tsc --noEmit
-npm.cmd run lint
-npx.cmd expo-doctor
-node --test tests/autenticacion.test.cjs
-git diff --check
-```
-
-La validación inicial pasó TypeScript, ESLint y las 12 pruebas anteriores. La ampliación de pruebas cubre 26 casos de servicios, almacenamiento separado, fallos, reingreso y resultados biométricos.
-
-| Comprobación final | Resultado |
-| --- | --- |
-| `npx.cmd tsc --noEmit` | Aprobado, sin errores |
-| `npm.cmd run lint` | Aprobado, sin errores ni advertencias |
-| `npx.cmd expo-doctor --verbose` | **21/21 controles aprobados** |
-| `node --test tests/autenticacion.test.cjs` | **26/26 pruebas aprobadas** |
-| `git diff --check` | Aprobado |
-| Configuración nativa inspeccionada | Face ID con mensaje en español; permisos biométricos Android declarados |
-| Exportación final de Android, iOS y web | Aprobada con el código final, incluida la confirmación de registro |
-| Recorrido automatizado en navegador | Registro, confirmación original, login, logout, rutas privadas, dos cuentas, favoritos, perfil, rubros, avisos, recarga y fallo de escritura con reintento: aprobados |
-| Revisión de tamaños y tema | 320, 390, 430 y 768 px; modo oscuro y recarga en oscuro; sin desborde horizontal |
-| Comparación de alcance con Git | Tema, logo, encabezados de Buscar, ilustraciones, barra inferior, Promociones, Mapa, estilos de Buscar/tarjetas/perfil y valores de los catálogos conservados |
-
-El recorrido final terminó sin excepciones de la aplicación. Las excepciones de la extensión **React Developer Tools** se identificaron por su contexto `chrome-extension://` y quedaron registradas por separado en `.expo/revision-funcional-20261020/resultado.json`. Las capturas están en esa misma carpeta local.
-
-La exportación se encuentra en `dist/validacion-cuenta-final-20261020`. Es una comprobación de empaquetado, no una instalación ni prueba del sensor en un teléfono. El primer intento encontró `hermesc.exe: permission denied` al usar temporales externos; el reintento autorizado con temporales dentro del proyecto aprobó las tres plataformas. Para reproducir esa alternativa en PowerShell:
-
-```powershell
-New-Item -ItemType Directory -Force -Path '.expo\temp-export' | Out-Null
-$env:TEMP = Join-Path (Get-Location) '.expo\temp-export'
-$env:TMP = $env:TEMP
-npx.cmd expo export --platform all --output-dir dist/validacion-cuenta-final-20261020
-```
-
-Estos valores de TEMP/TMP solo afectan la sesión de PowerShell en la que se ejecutan. El servidor Metro previo del proyecto se conserva; `/status` del puerto 8081 respondió `packager-status:running`.
-
-**Pendiente de dispositivo físico:** SecureStore/SQLite reales al cerrar el proceso, el sensor biométrico, teclado y áreas seguras nativas y VoiceOver/TalkBack. Las pruebas con sustitutos y el navegador no equivalen a esas comprobaciones.

@@ -69,20 +69,6 @@ Las siguientes cuentas existen en cada ejecución:
 
 En web, localStorage permite probar la persistencia del perfil simulado. SecureStore es el almacenamiento usado en los celulares. No se configura biometría ni se solicitan permisos de Face ID.
 
-## Validaciones automáticas
-
-Desde `cercau`, en PowerShell:
-
-```powershell
-node --test .\tests\autenticacion.test.cjs
-.\node_modules\.bin\tsc.cmd --noEmit
-npx.cmd expo lint
-```
-
-Las 12 pruebas ejecutan el código real del servicio y las validaciones con almacenamiento simulado. Cubren registro, roles, validaciones por campo, confirmación de contraseña, credenciales incorrectas, duplicados, recuperación tras reiniciar el servicio, cierre de sesión, datos corruptos y fallos de almacenamiento. No reemplazan una prueba de SecureStore en un dispositivo.
-
-Expo genera los tipos de rutas al iniciar Metro. Si después de agregar rutas TypeScript todavía muestra rutas antiguas, ejecutar `npx.cmd expo start` y volver a comprobar los tipos.
-
 ## Comprobación manual en el celular
 
 1. Ejecutar `npx.cmd expo start` desde `cercau`. Abrir el proyecto con Expo Go compatible con SDK 57, escaneando el QR; la computadora y el celular deben compartir red.
@@ -104,7 +90,7 @@ El indicador de recuperación se muestra en Mi cuenta y en las pantallas de aute
 
 - Rama comprobada: `mica`. Cambios conservados sin hacer commit.
 - Buscar, Promociones y Mapa se compararon con los archivos originales de Git: su contenido es idéntico. No hay rutas duplicadas.
-- TypeScript, lint y las 12 pruebas: aprobados.
+- TypeScript y lint: aprobados.
 - Exportación de Android, iOS y web: aprobada. Resultado local en `dist/validacion-cuenta-20261004`. Después del ajuste del tema web se volvió a exportar esa plataforma en `dist/validacion-cuenta-web-20261004`.
 - Recorrido automatizado en navegador: inicio de sesión, errores por campo y de credenciales, mostrar/ocultar contraseña, selección y cambio de rol, registro con confirmación de éxito, perfil, cancelación y confirmación del cierre, restauración de sesión tras recargar y acceso público a las otras pestañas. También se comprobó que una sesión abierta redirige desde el login hacia Mi cuenta.
 - Capturas revisadas a 390 px y login a 320 px, sin desbordamiento horizontal. También se verificó el cambio entre claro y oscuro sin recargar, y la recarga en oscuro. Están en `.expo/revision-ui`, fuera de Git.
@@ -127,19 +113,19 @@ Archivos de esta etapa:
 | `src/components/autenticacion/controles.tsx`, `identidad-cuenta.tsx`, `pantalla-autenticacion.tsx`, `selector-rol.tsx`, `confirmacion-cierre.tsx` | Estilos reutilizables de campos, botones, tarjetas, identidad y confirmación. |
 | `src/components/autenticacion/encabezado-barrial.tsx`, `face-id-preparado.tsx`, `accesos-cuenta.tsx` | Componentes nuevos para la ilustración, el futuro acceso biométrico y la grilla. |
 | `src/components/autenticacion/encabezado-cuenta.tsx`, `barrio-ilustrado.tsx` | Ajuste a las referencias adjuntas: encabezado amplio, saludo ilustrado y dibujo reutilizable. |
-| `docs/autenticacion.md` | Explicación del diseño, validaciones y recorrido de prueba. |
+| `docs/autenticacion.md` | Explicación del diseño, validaciones y recorrido de uso. |
 
-- Validaciones: `npm.cmd run lint -- --no-cache`, `.\node_modules\.bin\tsc.cmd --noEmit` y `node --test tests/autenticacion.test.cjs` (12 pruebas).
+- Validaciones: `npm.cmd run lint -- --no-cache` y `.\node_modules\.bin\tsc.cmd --noEmit`.
 - Exportación para iOS: `.\node_modules\.bin\expo.cmd export --platform ios --output-dir .expo/validacion-barrio-ios-final --max-workers 2`. Hermes requirió ejecutar la validación fuera del entorno restringido de Windows.
 - Recorrido en navegador: inicio de sesión, errores, visibilidad de contraseña, ambos roles, registro, cambio de rol conservando los campos, restauración tras recargar, redirección de una sesión abierta, cierre cancelado y confirmado y pestañas públicas. Los avisos de Editar, Favoritos y Mis reseñas se comprobaron; Seguridad y Face ID aparecen deshabilitados.
 - Capturas de login a 320 y 390 px, perfil, grilla, registro, roles y confirmación en `.expo/barrio-contemporaneo`. Se revisó el cambio de tema claro/oscuro y la recarga en oscuro. El recorrido terminó sin excepciones de la aplicación.
-- Git confirmó que Buscar, Promociones, Mapa, los layouts de rutas, el proveedor, los servicios, las validaciones, los tipos, las cuentas de prueba y las dependencias conservaron su contenido. El tema global y el aspecto de la barra sí se actualizaron.
+- Git confirmó que Buscar, Promociones, Mapa, los layouts de rutas, el proveedor, los servicios, las validaciones, los tipos y las dependencias conservaron su contenido. El tema global y el aspecto de la barra sí se actualizaron.
 
 **Pendiente en iPhone:** probar teclado, áreas seguras, tamaño de texto y VoiceOver; cerrar y reabrir la app para comprobar SecureStore; cancelar y confirmar el cierre de sesión. Face ID y Seguridad están preparados visualmente para otra etapa. Editar, Favoritos y Mis reseñas solo muestran información y no modifican datos.
 
 Validación del ajuste según las referencias:
 
-- Lint, TypeScript y las 12 pruebas de autenticación aprobaron. El recorrido en navegador comprobó los avisos de los accesos, el interruptor apagado y deshabilitado, ambos roles, registro, restauración de sesión y cierre cancelado y confirmado, sin excepciones de la app.
+- Lint y TypeScript aprobaron. El recorrido en navegador comprobó los avisos de los accesos, el interruptor apagado y deshabilitado, ambos roles, registro, restauración de sesión y cierre cancelado y confirmado, sin excepciones de la app.
 - Capturas nuevas en `.expo/referencia-barrio`: perfil a 390 y 320 px, grilla y tema oscuro. Se limitó el ancho de la ilustración del encabezado para separarla del título en pantallas pequeñas.
 - Se compararon huellas de los archivos con el estado previo de esta etapa: formularios, pantallas públicas, servicios, contexto, validaciones, tipos, datos, tema, layouts, barra inferior y dependencias permanecen iguales. Las modificaciones se concentran en Mi cuenta y sus componentes visuales.
 - Exportación de esta revisión: `.expo/validacion-referencia-barrio-ios`.

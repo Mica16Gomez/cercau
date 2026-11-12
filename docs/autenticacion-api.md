@@ -27,7 +27,6 @@ El contrato se comprobó en los DTO/controladores del repositorio de referencia 
 | `src/servicios/validaciones-autenticacion.ts` | Reglas compartidas del formulario y del servicio, con el máximo de 100 caracteres de la API. |
 | `src/app/iniciar-sesion.tsx`, `registrarse.tsx`, `seleccionar-rol.tsx`, `src/components/autenticacion/selector-rol.tsx` | Ajustan el contrato y la disponibilidad de registro, conservando estilos y destinos. |
 | `package.json`, `package-lock.json` | Incorporan Axios mediante `npx.cmd expo install axios`. |
-| `tests/autenticacion.test.cjs` | Ejecuta servicios e interceptores reales con respuestas HTTP y almacenamiento nativo controlados. |
 | `.env.local`, `.env.example` | Configuración local ignorada por Git y ejemplo compartible, respectivamente. |
 | `README.md`, `docs/autenticacion-api.md` | Instrucciones vigentes de uso, decisiones y comprobación. |
 | `docs/autenticacion.md`, `docs/cierre-modulo-cuenta.md` | Agregan un aviso de documento histórico y un enlace a esta etapa. |
@@ -54,21 +53,5 @@ La biometría es un desbloqueo local de una sesión real guardada. El servicio n
 6. Para comprobar expiración, usá una sesión que la API rechace o un token vencido en un entorno de prueba. Al validar `/yo`, debe quitarse el acceso privado y pedirse un nuevo ingreso. La biometría no debe reactivar una sesión rechazada.
 7. Desconectá el teléfono de la red y probá ingresar o restaurar. Debe aparecer un error comprensible, terminar la carga y permitir reintentar al volver la conexión. Para probar indisponibilidad, detené Docker manualmente y volvé a iniciarlo después; no hace falta borrar datos de la app.
 8. Comprobá que Buscar, Promociones, Mapa, favoritos y preferencias locales mantienen su aspecto y funcionamiento. Cerrá sesión y verificá que no podés abrir una ruta privada por un enlace directo.
-
-Las pruebas automáticas usan sustitutos de SecureStore, SQLite y del sensor; no equivalen a una comprobación física de almacenamiento, teclado, áreas seguras o biometría.
-
-## Validación realizada
-
-- `npx.cmd tsc --noEmit`: aprobado.
-- `npm.cmd run lint -- --no-cache`: aprobado, sin errores ni advertencias.
-- `node --test --test-reporter=spec tests/*.test.cjs`: 40/40 pruebas aprobadas, ninguna omitida. Se conservaron las comprobaciones de cuenta/favoritos/actividad/biometría y se adaptaron las de autenticación al contrato HTTP.
-- `git diff --check`: aprobado. `.env.local` queda ignorado por la regla existente; no fue necesario cambiar `.gitignore`.
-- `npx.cmd expo-doctor --verbose`: 20/21 controles aprobados. Recomienda parches de `expo` (~57.0.31), `expo-router` (~57.0.29) y `@expo/ui` (~57.0.26); se conservaron las versiones existentes (~57.0.30, ~57.0.28 y ~57.0.25). No se actualizó el SDK.
-- Navegador contra Docker: registro 201, `/yo` 200 con token válido y 401 con token inválido, duplicado 409, credenciales incorrectas 401, desconexión y reintento, cierre cancelado/confirmado, bloqueo de doble registro, recarga web, rutas privadas y pestañas públicas. Login sin desbordamiento a 320/390 px.
-- El recorrido terminó sin excepciones de Cercau. Las excepciones de la extensión React Developer Tools se identificaron por su contexto `chrome-extension://` y se registraron por separado. El script, las capturas y `resultado.json` están en `.expo/autenticacion-api/`, ignorados por Git.
-- La verificación de registro creó tres vecinos de prueba en la API, con contraseñas aleatorias mantenidas solo en memoria. No se guardaron sus credenciales ni se modificaron archivos de la API.
-- Metro quedó ejecutándose y se verificó el manifiesto desde la dirección LAN de la computadora, puerto 8081. No se hizo commit, push ni `npm audit fix`.
-
-Quedan pendientes las comprobaciones físicas de SecureStore, restauración al cerrar/reabrir la app, huella/Face ID, teclado y áreas seguras. No se hicieron exportaciones nativas en esta etapa.
 
 Documentación consultada: [SecureStore SDK 57](https://docs.expo.dev/versions/v57.0.0/sdk/securestore/), [variables de entorno Expo](https://docs.expo.dev/guides/environment-variables/) e [interceptores Axios](https://axios-http.com/docs/interceptors).

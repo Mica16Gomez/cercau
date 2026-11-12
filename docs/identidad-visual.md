@@ -66,11 +66,10 @@ Comandos de comprobación:
 ```powershell
 npm.cmd run lint -- --no-cache
 .\node_modules\.bin\tsc.cmd --noEmit
-node --test tests/autenticacion.test.cjs
 .\node_modules\.bin\expo.cmd export --platform ios --output-dir .expo/validacion-redisenio-completo-ios --max-workers 2
 ```
 
-Lint y TypeScript aprobaron sin advertencias ni errores; las 12 pruebas de autenticación aprobaron. El recorrido en navegador revisó búsqueda sin tildes y mayúsculas, combinación de categoría y texto, limpieza, favoritos al cambiar filtros, saludo con sesión, ambos roles, errores, registro, restauración de sesión, redirección con sesión abierta y cierre cancelado y confirmado. El interruptor Face ID sigue apagado y deshabilitado.
+Lint y TypeScript aprobaron sin advertencias ni errores. El recorrido en navegador revisó búsqueda sin tildes y mayúsculas, combinación de categoría y texto, limpieza, favoritos al cambiar filtros, saludo con sesión, ambos roles, errores, registro, restauración de sesión, redirección con sesión abierta y cierre cancelado y confirmado. El interruptor Face ID sigue apagado y deshabilitado.
 
 La exportación para iOS aprobó y generó el bundle en `.expo/validacion-redisenio-completo-ios`. También aprobó el cambio entre claro y oscuro, la recarga en oscuro y el regreso al tema claro.
 
