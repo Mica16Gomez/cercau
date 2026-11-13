@@ -1,9 +1,12 @@
-import { useCallback, useState } from 'react';
-import { ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { router } from 'expo-router';
+import { useNetworkState } from 'expo-network';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { EnlaceCuenta, MensajeError } from '@/components/autenticacion/controles';
 import { BusinessCard } from '@/components/business-card';
+import { EstadoDirectorio } from '@/components/directorio/estado-directorio';
 import { EncabezadoBuscar, EncabezadoComercios } from '@/components/encabezado-buscar';
 import { CategoryChip, EstadoInterfaz, SearchField } from '@/components/interfaz';
 import { LogoCercau } from '@/components/logo-cercau';
@@ -11,25 +14,72 @@ import { ThemedText } from '@/components/themed-text';
 import { useAutenticacion } from '@/contextos/autenticacion';
 import { useConsulta } from '@/hooks/use-consulta';
 import { useFavoritos } from '@/hooks/use-favoritos';
+import { adaptarComercio, estaAbierto } from '@/servicios/adaptar-comercio';
+import { filtrarDirectorio, distanciaMetros, formatearDistancia } from '@/servicios/directorio-reglas';
+import { obtenerDirectorio } from '@/servicios/directorio';
+import { solicitarUbicacionActual } from '@/servicios/ubicacion-directorio';
+import type { Coordenadas } from '@/tipos/directorio';
 import { useTheme } from '@/hooks/use-theme';
 import { buscarComercios, obtenerCategorias } from '@/servicios/comercios';
 
 export default function SearchScreen() {
   const theme = useTheme();
+  const red = useNetworkState();
   const { width, fontScale } = useWindowDimensions();
   const contentWidth = Math.min(width, 560) - 32;
   const cardWidth = fontScale > 1.3 ? Math.min(contentWidth, 220) : Math.round((contentWidth - 20) / 2.4);
   const { usuario } = useAutenticacion();
   const [query, setQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
-  const categorias = useConsulta(useCallback(() => obtenerCategorias(), []));
-  const comercios = useConsulta(useCallback(() => buscarComercios(query, selectedCategory), [query, selectedCategory]));
+  const [soloAbiertos, setSoloAbiertos] = useState(false);
+  const [ubicacion, setUbicacion] = useState<Coordenadas | null>(null);
+  const [errorUbicacion, setErrorUbicacion] = useState<string | null>(null);
+  const [solicitandoUbicacion, setSolicitandoUbicacion] = useState(false);
+  const [ahora, setAhora] = useState(() => new Date());
+  const directorio = useConsulta(useCallback(() => obtenerDirectorio(), []));
   const { favoritos: favoriteIds, alternar, cargando, error, reintentar } = useFavoritos();
-  const visibleBusinesses = comercios.datos ?? [];
+  const rubros = useMemo(() => directorio.datos?.rubros ?? [], [directorio.datos]);
+  const comerciosFiltrados = useMemo(() => filtrarDirectorio(directorio.datos?.comercios ?? [], {
+    texto: query,
+    rubroId: selectedCategory,
+    soloAbiertos,
+    ubicacion,
+    ahora,
+  }, estaAbierto), [directorio.datos, query, selectedCategory, soloAbiertos, ubicacion, ahora]);
+  const visibleBusinesses = useMemo(() => comerciosFiltrados.map((comercio) => {
+    const tarjeta = adaptarComercio(comercio, rubros);
+    return {
+      ...tarjeta,
+      distance: ubicacion ? formatearDistancia(distanciaMetros(ubicacion, comercio.coordenadas)) : comercio.direccion,
+    };
+  }), [comerciosFiltrados, rubros, ubicacion]);
+  const sinConexion = red.isConnected === false || red.isInternetReachable === false;
+
+  useEffect(() => {
+    const intervalo = setInterval(() => setAhora(new Date()), 60_000);
+    return () => clearInterval(intervalo);
+  }, []);
 
   function clearFilters() {
     setQuery('');
     setSelectedCategory('');
+    setSoloAbiertos(false);
+  }
+
+  async function ordenarPorDistancia() {
+    if (solicitandoUbicacion) return;
+    setSolicitandoUbicacion(true);
+    setErrorUbicacion(null);
+    try {
+      const resultado = await solicitarUbicacionActual();
+      if (resultado.estado === 'ok') setUbicacion(resultado.coordenadas);
+      else if (resultado.estado === 'sin-permiso') setErrorUbicacion('Sin permiso de ubicación. Podés seguir buscando por nombre y rubro.');
+      else setErrorUbicacion('La ubicación no está disponible en esta plataforma. La búsqueda sigue funcionando.');
+    } catch {
+      setErrorUbicacion('No pudimos obtener tu ubicación. Revisá los permisos o seguí buscando por nombre y rubro.');
+    } finally {
+      setSolicitandoUbicacion(false);
+    }
   }
 
   return (
@@ -62,21 +112,36 @@ export default function SearchScreen() {
             contentInsetAdjustmentBehavior="never"
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={styles.categories}>
-            {(categorias.datos ?? []).map((category) => <CategoryChip key={category.id} compacto titulo={category.nombre} seleccionado={category.id === selectedCategory} onPress={() => setSelectedCategory(category.id)} />)}
+            {[{ id: '', nombre: 'Todos' }, ...rubros].map((category) => <CategoryChip key={category.id || 'todos'} compacto titulo={category.nombre} seleccionado={category.id === selectedCategory} onPress={() => setSelectedCategory(category.id)} />)}
           </ScrollView>
         </View>
 
         <View style={styles.resultsSection}>
-          {categorias.error && <EstadoInterfaz tipo="error" titulo="No pudimos cargar las categorías" accion="Reintentar" onPress={categorias.reintentar} />}
+          <EstadoDirectorio datos={directorio.datos} sinConexion={sinConexion} />
+          {directorio.cargando && <EstadoInterfaz tipo="cargando" titulo="Cargando comercios…" />}
+          {directorio.error && <EstadoInterfaz tipo="error" titulo="No pudimos cargar los comercios" descripcion={directorio.error} accion="Reintentar" onPress={directorio.reintentar} />}
+          {!directorio.cargando && !directorio.error && <View style={styles.filtrosRapidos}>
+            <Pressable accessibilityRole="button" accessibilityState={{ selected: soloAbiertos }} onPress={() => setSoloAbiertos((valor) => !valor)}
+              style={[styles.filtroRapido, { backgroundColor: soloAbiertos ? theme.forest : theme.backgroundElement, borderColor: soloAbiertos ? theme.forest : theme.border }]}>
+              <ThemedText type="smallBold" themeColor={soloAbiertos ? 'onForest' : 'text'}>Abierto ahora</ThemedText>
+            </Pressable>
+            <Pressable accessibilityRole="button" onPress={() => void ordenarPorDistancia()} disabled={solicitandoUbicacion}
+              style={[styles.filtroRapido, { backgroundColor: theme.backgroundElement, borderColor: theme.border }, solicitandoUbicacion && styles.presionado]}>
+              <ThemedText type="smallBold" themeColor="primary">{solicitandoUbicacion ? 'Buscando…' : ubicacion ? 'Cerca de mí' : 'Ordenar por distancia'}</ThemedText>
+            </Pressable>
+            <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: '/mapa', params: selectedCategory ? { rubroId: selectedCategory } : {} })}
+              style={[styles.filtroRapido, { backgroundColor: theme.primarySoft, borderColor: theme.primarySoft }]}>
+              <ThemedText type="smallBold" themeColor="primary">Ver mapa</ThemedText>
+            </Pressable>
+          </View>}
+          {errorUbicacion && <ThemedText accessibilityRole="alert" type="small" themeColor="textSecondary">{errorUbicacion}</ThemedText>}
           <MensajeError mensaje={error} />
           {error && <EnlaceCuenta titulo="Reintentar guardado" onPress={reintentar} deshabilitado={cargando} />}
           <EncabezadoComercios cantidad={visibleBusinesses.length} onVerTodos={clearFilters} />
-          {comercios.cargando && <EstadoInterfaz tipo="cargando" titulo="Cargando comercios…" />}
-          {comercios.error && <EstadoInterfaz tipo="error" titulo="No pudimos cargar los comercios" descripcion={comercios.error} accion="Reintentar" onPress={comercios.reintentar} />}
-          {visibleBusinesses.length > 0 && <ScrollView horizontal showsHorizontalScrollIndicator={false} contentInsetAdjustmentBehavior="never"
+          {visibleBusinesses.length > 0 && !directorio.cargando && !directorio.error && <ScrollView horizontal showsHorizontalScrollIndicator={false} contentInsetAdjustmentBehavior="never"
             keyboardShouldPersistTaps="handled" contentContainerStyle={styles.businessList}>
             {visibleBusinesses.map((business) => (
-              <View key={business.id} style={{ width: cardWidth }}>
+              <View key={business.id} style={{ width: cardWidth, gap: 6 }}>
                 <BusinessCard
                   business={business}
                   formatoBuscar
@@ -84,10 +149,15 @@ export default function SearchScreen() {
                   onToggleFavorite={() => void alternar(business.id)}
                   deshabilitado={cargando}
                 />
+                <Pressable accessibilityRole="button" accessibilityLabel={`Ver ficha de ${business.name}`}
+                  onPress={() => router.push({ pathname: '/comercios/[id]', params: { id: business.id } })}
+                  style={[styles.verFicha, { backgroundColor: theme.primarySoft }]}>
+                  <ThemedText type="smallBold" themeColor="primary">Ver ficha</ThemedText>
+                </Pressable>
               </View>
             ))}
           </ScrollView>}
-          {!comercios.cargando && !comercios.error && visibleBusinesses.length === 0 && (
+          {!directorio.cargando && !directorio.error && visibleBusinesses.length === 0 && (
             <EstadoInterfaz titulo="No encontramos comercios" descripcion="Probá con otro nombre o elegí otra categoría." accion="Limpiar filtros" onPress={clearFilters} />
           )}
         </View>
@@ -123,4 +193,8 @@ const styles = StyleSheet.create({
   categories: { gap: 8, paddingRight: 4 },
   resultsSection: { gap: 10 },
   businessList: { gap: 10, paddingBottom: 4, alignItems: 'stretch' },
+  filtrosRapidos: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  filtroRapido: { minHeight: 40, borderWidth: 1, borderRadius: 20, paddingHorizontal: 13, alignItems: 'center', justifyContent: 'center' },
+  verFicha: { minHeight: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  presionado: { opacity: 0.65 },
 });

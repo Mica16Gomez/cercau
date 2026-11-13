@@ -1,44 +1,33 @@
-# Welcome to your Expo app 👋
+# Cercau
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Aplicación móvil de directorio barrial desarrollada con Expo SDK 58, React Native, TypeScript y Expo Router.
 
-## Get started
+## Inicio rápido
 
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
+1. Instalar dependencias
 
    ```bash
-   npx expo start
+   npm.cmd install
    ```
 
-In the output, you'll find options to open the app in a
+2. Iniciar la app
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+   ```bash
+   npx.cmd expo start
+   ```
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+Después de iniciar, podés abrir la app en:
 
-## Get a fresh project
+- [Build de desarrollo](https://docs.expo.dev/develop/development-builds/introduction/)
+- [Emulador Android](https://docs.expo.dev/workflow/android-studio-emulator/)
+- [Simulador iOS](https://docs.expo.dev/workflow/ios-simulator/)
+- [Expo Go](https://expo.dev/go) compatible con el SDK del proyecto
 
-When you're ready, run:
-
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Las rutas de Expo Router están en `src/app/`; los componentes reutilizables están en `src/components/`.
 
 ### Other setup steps
 
 - To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
 - Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
 
 ## Learn more
@@ -55,13 +44,13 @@ Join our community of developers creating universal apps.
 - [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
 
-## Cercau: Base, autenticación, cuenta, preferencias y favoritos
+## La aplicación y sus módulos
 
-Aplicación móvil de directorio de comercios con Expo SDK 58, React Native, TypeScript y Expo Router. La implementación conserva la identidad visual existente y las cuatro pestañas públicas. La documentación anterior de la plantilla se conserva arriba; **no es necesario ejecutar `reset-project`** para trabajar en Cercau.
+Aplicación móvil de directorio de comercios con Expo SDK 58, React Native, TypeScript y Expo Router. La app conserva la identidad visual y las cuatro pestañas públicas.
 
 El módulo permite registrar una cuenta de **vecino** e iniciar sesión con cuentas reales de la API del profesor. Las cuentas de comercio las crea el Centro Comercial. Editar el nombre, administrar favoritos, elegir rubros y activar/desactivar avisos usan la API real. Los formularios validan cada campo, confirman la contraseña, permiten mostrarla u ocultarla y bloquean envíos simultáneos. El ingreso abre Mi cuenta mediante `replace`. El registro inicia sesión automáticamente y conserva su confirmación visual original en `/cuenta-creada`, también mediante `replace`; desde allí se abre Mi cuenta.
 
-El contexto de autenticación es la fuente única del usuario. Expo Router protege `/editar-perfil`, `/favoritos`, `/ajustes-cuenta`, `/mis-resenas` y la confirmación `/cuenta-creada`. Las rutas de registro e ingreso están disponibles sin sesión. Buscar, Promociones, Mapa y la bienvenida de Mi cuenta siguen siendo públicas; tocar un corazón sin cuenta abre el login.
+El contexto de autenticación es la fuente única del usuario. Expo Router protege `/editar-perfil`, `/favoritos`, `/ajustes-cuenta`, `/mis-resenas` y la confirmación `/cuenta-creada`. Las rutas de registro e ingreso están disponibles sin sesión. Buscar, el mapa, el detalle de comercio, Promociones y la bienvenida de Mi cuenta son públicos; tocar un corazón sin cuenta abre el login.
 
 ### Persistencia y autenticación con la API
 
@@ -79,34 +68,49 @@ Face ID requiere una **development build** en iPhone: no funciona en Expo Go. En
 
 ### Ejecución
 
-En PowerShell, desde `C:\Users\mica_\Desktop\DesarrolloMovil\cercau`:
+#### API con Docker
+
+En una terminal, desde `cercau`:
+
+```powershell
+Set-Location '..\apis docentes\api-proyectos-mobile\api-directorio-comercios'
+docker compose up
+```
+
+Esperá el mensaje `Escuchando en el puerto 3000` y comprobá `http://localhost:3000/salud`. Dejá esta terminal abierta mientras uses la app. Para detener la API, presioná `Ctrl+C` o ejecutá `docker compose down` desde la carpeta de la API.
+
+#### Aplicación
+
+En otra terminal, desde `cercau`:
 
 ```powershell
 npm.cmd install
-npx.cmd expo start
+npx.cmd expo start --clear
 ```
 
-El primer comando instala lo declarado en el proyecto, sin cambiar de SDK. Si todavía no existe `.env.local`, copialo desde `.env.example` con `Copy-Item .env.example .env.local` y editá `EXPO_PUBLIC_API_URL` con la dirección de tu API accesible desde el teléfono. No reemplaces una configuración local existente. `.env.local` está ignorado por Git. El segundo comando inicia Metro; abrir el QR con una versión de Expo Go compatible o usar una development build. Para Android, también se puede presionar `a` con un emulador configurado; `w` abre la versión web.
+Si `.env.local` todavía no existe, crealo copiando `.env.example`; si ya existe, editá solo la configuración necesaria y no lo reemplaces. Usá `EXPO_PUBLIC_DIRECTORIO_MOCKS=false` para consultar la API o `true` para mostrar comercios ficticios sin levantarla.
 
-Creá una cuenta de vecino en el formulario o usá una cuenta existente de la API. Cercau ya no tiene cuentas demo propias. El perfil guarda el nombre mediante `PATCH /yo` y conserva correo, rol e identificadores recibidos del servidor. Buscar usa comercios y rubros reales; favoritos agrega con `PUT` y quita con `DELETE`. La dirección ocupa el lugar de la distancia, sin calcular ubicaciones. Se mantienen las ilustraciones; fotos y video quedan fuera de esta etapa.
+La dirección de la API depende del entorno:
+
+- Web o navegador de la misma computadora: `http://localhost:3000`.
+- Emulador Android: `http://10.0.2.2:3000`.
+- Teléfono físico: `http://IP-DE-LA-COMPUTADORA:3000`; ambos dispositivos deben estar en la misma Wi-Fi y el firewall debe permitir la conexión.
+
+Metro toma estas variables al iniciar; si las cambiás, detené y reiniciá Expo. Abrí el QR con Expo Go o presioná `a` para usar un emulador Android configurado.
+
+El directorio busca por nombre y descripción; también contempla `productos` cuando está disponible en los datos, como en el modo demostración. La API actual no define ese campo, por lo que buscar productos reales requiere que el contrato del backend lo incorpore. La app filtra por rubro y por abierto ahora; los horarios se calculan en la zona horaria de Argentina y respetan los distintos tramos del día. **Ordenar por distancia** solicita ubicación únicamente al tocar el botón. Si se rechaza el permiso, la búsqueda manual, las fichas y el mapa siguen disponibles.
+
+En Android/iOS, el directorio y sus horarios se guardan en SQLite. Sin conexión se muestra la última copia disponible con su fecha; si todavía no existe una copia, se informa que se están usando datos de demostración. En web, la caché dura mientras la pestaña está abierta. El mapa móvil usa `react-native-maps`; la versión web presenta OpenStreetMap y una lista de comercios.
+
+La ficha incluye horarios, datos de contacto, fotos disponibles y acciones para llamar, abrir WhatsApp o Instagram y consultar cómo llegar. El detalle también puede abrir la ubicación del comercio en el mapa de Cercau.
 
 ### Integraciones con otros módulos
 
 - **Reseñas:** Mi cuenta muestra lectura con carga, vacío, error y reintento. `conectarConsultaResenas` permite conectar el servicio del compañero. No se crean opiniones ficticias ni se implementa su creación, edición o eliminación.
 - **Notificaciones:** pueden consumir `usuario.rubrosDeInteres` y `usuario.avisosActivos`. Este módulo no pide permisos ni envía avisos.
 - **QR:** `useAutenticacion().validarAccionComercio()` comprueba sesión, rol y asociación, y solicita una validación biométrica. No hay escáner implementado.
-- **Promociones personales y detalle de comercio:** no existen servicios/rutas de esas funciones en este checkout. No se agregan accesos a destinos inexistentes ni datos inventados. Las pestañas de Promociones y Mapa conservan su implementación original.
+- **Promociones personales:** no existen servicios/rutas de esas funciones en este checkout. No se agregan accesos a destinos inexistentes ni datos inventados. La pestaña Promociones conserva su implementación original.
 
-### Validaciones
+### Documentación
 
-```powershell
-npx.cmd tsc --noEmit
-npm.cmd run lint
-npx.cmd expo-doctor@latest
-node --test tests/autenticacion.test.cjs
-git diff --check
-```
-
-TypeScript revisa los tipos; lint revisa las reglas del código; Expo Doctor comprueba configuración y dependencias; las pruebas usan Node y sustitutos de los módulos nativos, sin agregar un framework. No sustituyen una prueba de SecureStore, teclado o huella en un dispositivo físico.
-
-Ver [cuenta y favoritos con la API](docs/cuenta-api.md) para el contrato, las pruebas y el recorrido en iPhone. [Autenticación con la API](docs/autenticacion-api.md) documenta la etapa inicial. Los documentos `docs/cierre-modulo-cuenta.md` y `docs/autenticacion.md` se conservan como historial de etapas anteriores.
+Ver [cuenta y favoritos con la API](docs/cuenta-api.md) para el contrato y el recorrido de ese módulo. [Autenticación con la API](docs/autenticacion-api.md) documenta la etapa inicial. Los documentos `docs/cierre-modulo-cuenta.md` y `docs/autenticacion.md` corresponden a etapas anteriores.

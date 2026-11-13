@@ -1,5 +1,9 @@
-import { ComingSoonScreen } from '@/components/coming-soon-screen';
+import { useLocalSearchParams } from 'expo-router';
+import { MapaDirectorio } from '@/components/directorio/mapa-directorio';
 
 export default function MapScreen() {
-  return <ComingSoonScreen title="Mapa" icon={{ ios: 'map', android: 'map', web: 'map' }} />;
+  const parametros = useLocalSearchParams<{ comercioId?: string | string[]; rubroId?: string | string[] }>();
+  const comercioId = typeof parametros.comercioId === 'string' ? parametros.comercioId : parametros.comercioId?.[0];
+  const rubroId = typeof parametros.rubroId === 'string' ? parametros.rubroId : parametros.rubroId?.[0];
+  return <MapaDirectorio comercioId={comercioId} rubroId={rubroId} />;
 }

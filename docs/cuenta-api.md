@@ -49,7 +49,6 @@ Los datos ficticios anteriores se conservan en sus archivos y no se importan al 
 
 - `npx.cmd tsc --noEmit`: aprobado.
 - `npm.cmd run lint -- --no-cache`: aprobado, sin advertencias.
-- `node --test --test-reporter=spec tests/autenticacion.test.cjs`: 60/60 aprobadas, ninguna omitida. Incluyen servicios e interceptores reales y acciones del contexto con almacenamiento y respuestas controlados.
 - `npx.cmd expo-doctor@latest`: 20/20 controles aprobados.
 - Servicios de Cercau contra Docker: ingreso, `/yo`, 9 rubros, 39 comercios, PATCH de perfil/preferencias, PUT, reconstrucción de favoritos, DELETE 204, rechazo 422 sin cambios parciales y cierre por 401. La cuenta demo de vecino recuperó al finalizar su nombre, intereses, avisos y favoritos originales. Credenciales y tokens sólo estuvieron en memoria.
 

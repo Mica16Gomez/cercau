@@ -105,7 +105,6 @@ Comandos ejecutados desde la carpeta `cercau`:
 ```powershell
 npm.cmd run lint -- --no-cache
 .\node_modules\.bin\tsc.cmd --noEmit
-node --test tests/autenticacion.test.cjs
 node .expo/redisenio-natural/validar-ui.cjs
 node .expo/redisenio-natural/validar-ui.cjs responsive
 node .expo/redisenio-natural/validar-ui.cjs tema
@@ -117,7 +116,7 @@ El recorrido funcional revisa búsqueda, filtros combinados, favoritos, errores,
 
 La exportación nativa necesita que el entorno permita ejecutar Hermes. Ante el error de permisos, se reintentó fuera del entorno restringido, con `TEMP` y `TMP` apuntando a `.expo/redisenio-natural/tmp` para esa ejecución.
 
-Resultados: ESLint sin errores ni advertencias; TypeScript sin errores; 12 de 12 pruebas de autenticación aprobadas; recorrido funcional sin excepciones; revisión de seis pantallas a 320 y 768 px aprobada en ambos temas; cambio de tema, recarga en oscuro y regreso a claro aprobados. La exportación de iOS terminó correctamente e incluyó las tres fotografías. `git diff --check` aprobó y la comparación de los archivos protegidos confirmó que se conservaron rutas, lógica y dependencias.
+ESLint y TypeScript finalizaron sin errores ni advertencias. El recorrido funcional, la revisión visual en ambos temas y la exportación de iOS finalizaron correctamente. La comparación de los archivos protegidos confirmó que se conservaron rutas, lógica y dependencias.
 
 ## Comprobar en el celular
 

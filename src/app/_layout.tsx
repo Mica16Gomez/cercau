@@ -41,6 +41,7 @@ function Navegacion() {
   if (recuperandoSesion) return <View style={{ flex: 1, justifyContent: 'center', backgroundColor: theme.background }}><IndicadorSesion /></View>;
   return <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.background } }}>
     <Stack.Screen name="(tabs)" />
+    <Stack.Screen name="comercios/[id]" />
     <Stack.Protected guard={!usuario}>
       <Stack.Screen name="iniciar-sesion" />
       <Stack.Screen name="seleccionar-rol" />
