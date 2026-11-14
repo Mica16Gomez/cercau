@@ -1,24 +1,22 @@
-import { router, useLocalSearchParams } from 'expo-router';
-import { useNetworkState } from 'expo-network';
-import { Image } from 'expo-image';
 import * as Linking from 'expo-linking';
+import { useNetworkState } from 'expo-network';
+import { router, useLocalSearchParams } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
 import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { SymbolView } from 'expo-symbols';
 
 import { EstadoDirectorio } from '@/components/directorio/estado-directorio';
-import { VideoComercio } from '@/components/directorio/video-comercio';
 import { EstadoInterfaz } from '@/components/interfaz';
+import { SeccionResenas } from '@/components/resenas/seccion-resenas';
 import { ThemedText } from '@/components/themed-text';
 import { MaxContentWidth } from '@/constants/theme';
 import { useConsulta } from '@/hooks/use-consulta';
 import { useTheme } from '@/hooks/use-theme';
 import { estaAbierto } from '@/servicios/adaptar-comercio';
 import { obtenerComercioDirectorio } from '@/servicios/directorio';
-import { obtenerMensajeError, ErrorAutenticacion } from '@/servicios/errores-autenticacion';
+import { ErrorAutenticacion, obtenerMensajeError } from '@/servicios/errores-autenticacion';
 import type { Horario } from '@/tipos/directorio';
-
 const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
 function mostrarHorario(horarios: Horario[], dia: number): string {
@@ -125,13 +123,7 @@ export default function ComercioDetalleScreen() {
         <ThemedText themeColor="textSecondaryStrong">{comercio.descripcion || 'Este comercio todavía no agregó una descripción.'}</ThemedText>
       </View>
 
-      <View style={estilos.seccion}>
-        <ThemedText accessibilityRole="header" style={estilos.subtitulo}>Fotos</ThemedText>
-        {comercio.imagenes.length ? <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={estilos.fotos}>
-          {comercio.imagenes.map((uri, indice) => <Image key={`${uri}-${indice}`} source={{ uri }} style={estilos.foto} contentFit="cover"
-            accessibilityLabel={`Foto ${indice + 1} de ${comercio.nombre}`} />)}
-        </ScrollView> : <ThemedText type="small" themeColor="textSecondary">Este comercio no cargó fotos.</ThemedText>}
-      </View>
+      
 
       <View style={estilos.seccion}>
         <ThemedText accessibilityRole="header" style={estilos.subtitulo}>Horarios</ThemedText>
@@ -148,11 +140,12 @@ export default function ComercioDetalleScreen() {
         <ThemedText type="small" themeColor="textSecondary">{comercio.mediosDePago.length ? comercio.mediosDePago.join(' · ') : 'Sin información disponible.'}</ThemedText>
       </View>
 
-      <View style={estilos.seccion}>
-        <ThemedText accessibilityRole="header" style={estilos.subtitulo}>Presentación</ThemedText>
-        {comercio.videoUrl ? <VideoComercio url={comercio.videoUrl} /> :
-          <ThemedText type="small" themeColor="textSecondary">Este comercio no agregó un video.</ThemedText>}
-      </View>
+      
+      <SeccionResenas
+  comercioId={comercio.id}
+  nombreComercio={comercio.nombre}
+  mostrarMultimedia={true}
+/>
     </ScrollView>
   </SafeAreaView>;
 }
